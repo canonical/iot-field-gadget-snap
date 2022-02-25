@@ -43,7 +43,7 @@ parts:
 
       ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
 
-      tools/mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+      mkenvimage -r -s 0x2000 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
       touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
       cp ${SNAPCRAFT_PART_BUILD}/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
 
