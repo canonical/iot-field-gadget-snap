@@ -26,7 +26,7 @@ load ${devtype} ${devnum}:${seedpart} ${config_addr_r} uboot/ubuntu/boot.sel
 env import ${config_addr_r}
 
 # For now
-setenv prefix systems/20220205/kernel
+setenv prefix systems/20220225/kernel
 setenv kernel_bootpart 1
 
 setenv console "console=ttyS0, earlycon=sbi"
