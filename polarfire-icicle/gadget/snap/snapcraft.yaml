@@ -1,0 +1,95 @@
+name: virt
+version: 20-1
+summary: RISCV virt board gadget
+description: |
+  Support files for booting Qemu's RISCV virt board.
+type: gadget
+base: core20
+assumes: [kernel-assets]
+architectures:
+  - build-on:
+      - amd64
+      - riscv64
+    run-on: riscv64
+
+package-repositories:
+  - type: apt
+    ppa: snappy-dev/image
+
+confinement: strict
+grade: stable
+
+parts:
+  u-boot-smode:
+    plugin: make
+    source: https://github.com/u-boot/u-boot.git
+    source-type: git
+    source-branch: v2022.01
+    source-depth: 1
+    override-build: |
+      # Obviously, use config for your hardware. {sunxi, in my case}
+      # u-boot is being built as a payload for OpenSBI, so we build in smode.
+      #ARCH=riscv make qemu-riscv64_smode_defconfig
+
+      ## Relevant config options for Qemu
+      # CONFIG_ENV_IS_NOWHERE is not set
+      # CONFIG_ENV_IS_IN_FAT=y
+      # CONFIG_ENV_FAT_INTERFACE="virtio"
+      # CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
+      # CONFIG_ENV_FAT_FILE="boot.scr"
+
+      ## Just carry over our config:
+      cp ${SNAPCRAFT_PROJECT_DIR}/u-boot/config ./.config
+
+      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
+
+      tools/mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+      touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
+      cp ${SNAPCRAFT_PART_BUILD}/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
+
+    build-packages:
+      - libpython2.7-dev
+      - bc
+      - bison
+      - flex
+      - libssl-dev
+    prime:
+      - boot.sel
+      - uboot.conf
+
+  boot-scr:
+    plugin: nil
+    source: .
+    override-build: |
+      # Make specifically a RISC-V boot script.
+      mkimage \
+        -T script \
+        -A riscv \
+        -C none \
+        -n 'Boot Script' \
+        -d ${SNAPCRAFT_PROJECT_DIR}/u-boot/boot.scr.in \
+        ${SNAPCRAFT_PART_INSTALL}/boot.scr
+    build-packages:
+      - sed
+      - u-boot-tools
+
+  opensbi:
+    after: 
+      - u-boot-smode
+    plugin: make
+    source: https://github.com/riscv-software-src/opensbi
+    source-type: git
+    source-depth: 1
+    override-build: |
+      # Build OpenSBI with the u-boot code builtin
+      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${SNAPCRAFT_PART_BUILD}/../../u-boot-smode/install/u-boot.bin
+
+      cp ${SNAPCRAFT_PART_BUILD}/build/platform/generic/firmware/fw_payload.elf \
+        ${SNAPCRAFT_PART_INSTALL}/
+
+build-packages:
+  - build-essential
+  - on amd64:
+    - gcc-riscv64-linux-gnu
+  - else:
+    - gcc

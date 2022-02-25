@@ -1,0 +1,44 @@
+# mmc/scsi etc
+setenv devtype virtio
+# The device number of the given type
+setenv devnum 0
+# The ubuntu-seed partition
+setenv seedpart 1
+# The ubuntu-boot partition
+setenv bootpart 2
+# Address to load the config to
+setenv config_addr_r 0x80200000
+# Address to load the kernel to
+setenv kernel_addr_r 0x84000000
+# Address to load the FDT to
+setenv fdt_addr_r 0x88000000
+# Address to load the initrd to.
+setenv ramdisk_addr_r 0x8200000
+# Kernel image filename
+setenv kernel_name kernel.img
+# Ramdisk filename
+setenv ramdisk_name initrd.img
+# Address to decompress the kernel image to.
+setenv kernel_comp_addr_r 0x20000000
+
+echo "Loading ubuntu-seed configuration..."
+load ${devtype} ${devnum}:${seedpart} ${config_addr_r} uboot/ubuntu/boot.sel
+env import ${config_addr_r}
+
+# For now
+setenv prefix systems/20220205/kernel
+setenv kernel_bootpart 1
+
+setenv console "console=ttyS0, earlycon=sbi"
+setenv bootargs "root=/dev/vda1 rootwait ${console} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
+
+echo "Loading ${prefix}${kernel_name}..."
+load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
+# Maximum size of the decompressed kernel
+setenv kernel_comp_size "${filesize}"
+
+echo "Loading ${prefix}${ramdisk_name}..."
+load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
+setenv ramdisk_size "${filesize}"
+
+booti ${kernel_addr_r} - ${fdtcontroladdr} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
