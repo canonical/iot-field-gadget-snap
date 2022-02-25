@@ -1,0 +1,33 @@
+volumes:
+  virt:
+    schema: mbr
+    bootloader: u-boot
+    structure:
+      - name: ubuntu-seed
+        role: system-seed
+        filesystem: vfat
+        type: 0C
+        size: 1500M
+        content:
+          - source: fw_payload.elf
+            target: /
+          - source: boot.scr
+            target: /
+      - name: ubuntu-boot
+        role: system-boot
+        filesystem: ext4
+        type: 0C
+        size: 750M
+        content:
+          - source: boot.sel
+            target: uboot/ubuntu/boot.sel
+      - name: ubuntu-save
+        role: system-save
+        filesystem: ext4
+        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: 16M
+      - name: ubuntu-data
+        role: system-data
+        filesystem: ext4
+        type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: 3G
