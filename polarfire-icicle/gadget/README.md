@@ -24,10 +24,15 @@ There are several different ways of building OpenSBI, the Supervisor Binary
 Interface for RISC-V (for more information, see [their project](https://github.com/riscv-software-src/opensbi)).
 
 1) `fw_jump.elf`
+
     |-> Jumps to a specific location in memory and executes the object there
+
 2) `fw_payload.elf`
+
     |-> Executes a binary built into OpenSBI as a pyaload
+
 3) `fw_dynamic.elf`
+
     |-> Determines how to proceed to the next bootloader at run-time
 
 `fw_dynamic.elf` is used in cases where `u-boot.bin` is built in m-mode
@@ -51,11 +56,15 @@ This is approximately all the knowledge required for us here.
 
 
 There are some additional files to consider.
+
 `boot.scr.in` file is processed at build-time to produce a set of
 instructions which `u-boot.bin` will execute at run-time.
+
 `gadget.yaml` defines the underlying structure of our Ubuntu Core image.
+
 `fitImage.its` is an optional file in our use case but can be relevant when we
 are using a u-boot build in M-mode (spl). This case will require a modified
+
 `snap/snapcraft.yaml` in which we build u-boot twice, once as a payload for
 OpenSBI and a second time as a binary containing that `fw_payload.elf`. This is
 potentially relevant on *real hardware*.
