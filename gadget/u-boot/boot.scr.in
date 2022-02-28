@@ -7,17 +7,19 @@ setenv seedpart 1
 # The ubuntu-boot partition
 setenv bootpart 2
 # Address to load the config to
-setenv config_addr_r 0xa00000
+setenv config_addr_r 0x81000000
 # Address to load the kernel to
 setenv kernel_addr_r 0x84000000
 # Address to load the FDT to
 setenv fdt_addr_r 0x88000000
 # Address to load the initrd to.
-setenv ramdisk_addr_r 0x85000000
+setenv ramdisk_addr_r 0x82000000
 # Kernel image filename
 setenv kernel_name kernel.img
 # Ramdisk filename
 setenv ramdisk_name initrd.img
+# FDT filename
+setenv fdt_name dtbs/riscv64-virt.dtb
 # Address to decompress the kernel image to.
 setenv kernel_comp_addr_r 0x20000000
 
@@ -25,23 +27,40 @@ echo "Loading ubuntu-seed configuration..."
 load ${devtype} ${devnum}:${seedpart} ${config_addr_r} uboot/ubuntu/boot.sel
 env import ${config_addr_r}
 
-# For now
-setenv prefix systems/20220225/kernel/
-setenv kernel_bootpart 1
+if test "${snapd_recovery_mode}" = "run"
+then
+    echo "Loading ubuntu-boot configuration..."
+    load ${devtype} ${devnum}:${bootpart} ${config_addr_r} uboot/ubuntu/boot.sel
+    env import ${config_addr_r}
+    setenv kernel_bootpart "${bootpart}"
+    if test "${snapd_recovery_mode}" = "try"
+    then
+        echo "Trying to boot with ${snap_kernel}"
+        setenv prefix "uboot/ubuntu/${snap_try_kernel}/"
+    else
+        echo "Using ${snap_kernel}"
+        setenv prefix "uboot/ubuntu/${snap_kernel}/"
+    fi
+else
+    # Prefix within the seed partition to the boot files
+    setenv prefix "systems/${snapd_recovery_system}/kernel/"
+        setenv kernel_bootpart "${seedpart}"
+fi
 
-setenv console "console=ttyS0, earlycon=sbi"
-setenv bootargs "root=/dev/vda1 rootwait ${console} rw"
-#snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
+setenv console "console=ttyS0,11520 earlycon=sbi"
+setenv bootargs "${console} rw loglevel=1 snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
 
 echo "Loading ${prefix}${kernel_name}..."
 load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
-# Maximum size of the decompressed kernel
 setenv kernel_comp_size "${filesize}"
 
-load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r}
+
+echo "Loading ${prefix}${fdt_name}..."
+load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
 
 echo "Loading ${prefix}${ramdisk_name}..."
 load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
 setenv ramdisk_size "${filesize}"
 
-booti ${kernel_addr_r} - ${fdtcontroladdr} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
+#bootefi ${kernel_addr_r} ${fdt_addr_r}
+booti ${kernel_addr_r} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
