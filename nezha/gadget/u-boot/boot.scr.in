@@ -7,25 +7,31 @@ setenv seedpart 1
 # The ubuntu-boot partition
 setenv bootpart 2
 # Address to load the config to
-setenv config_addr_r 0x81000000
-# Address to load the kernel to
-setenv kernel_addr_r 0x84000000
+setenv config_addr_r  0x82200000
 # Address to load the FDT to
-setenv fdt_addr_r 0x88000000
+setenv fdt_addr_r     0x82201000
+# Address to load the kernel to
+setenv kernel_addr_r  0x84000000
 # Address to load the initrd to.
-setenv ramdisk_addr_r 0x82000000
+setenv ramdisk_addr_r 0x86000000
 # Kernel image filename
 setenv kernel_name kernel.img
 # Ramdisk filename
 setenv ramdisk_name initrd.img
 # FDT filename
 setenv fdt_name dtbs/riscv64-virt.dtb
+# fitImage filename
+setenv fitimage_name fitImage
+# Use fitImage
+setenv use_fitimage 0
 # Address to decompress the kernel image to.
 setenv kernel_comp_addr_r 0x20000000
 
 echo "Loading ubuntu-seed configuration..."
 load ${devtype} ${devnum}:${seedpart} ${config_addr_r} uboot/ubuntu/boot.sel
 env import ${config_addr_r}
+
+echo "Snapd boot mode: ${snapd_recovery_mode}"
 
 if test "${snapd_recovery_mode}" = "run"
 then
@@ -42,25 +48,31 @@ then
         setenv prefix "uboot/ubuntu/${snap_kernel}/"
     fi
 else
-    # Prefix within the seed partition to the boot files
+    # Prefix within the seed partiion to the boot files
     setenv prefix "systems/${snapd_recovery_system}/kernel/"
-        setenv kernel_bootpart "${seedpart}"
+    setenv kernel_bootpart "${seedpart}"
 fi
 
-setenv console "console=ttyS0,11520 earlycon=sbi"
-setenv bootargs "${console} rw loglevel=1 snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
+setenv console "console=ttyS0,115200 earlycon=sbi"
+setenv bootargs "${console} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
 
-echo "Loading ${prefix}${kernel_name}..."
-load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
-setenv kernel_comp_size "${filesize}"
+# Load all files
+if test "${use_fitimage}" = "0"
+then
+    echo "Loading ${prefix}${fdt_name}..."
+    load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
 
+    echo "Loading ${prefix}${kernel_name}..."
+    load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
+    setenv kernel_comp_size "${filesize}"
 
-echo "Loading ${prefix}${fdt_name}..."
-load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
+    echo "Loading ${prefix}${ramdisk_name}..."
+    load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
+    setenv ramdisk_size "${filesize}"
 
-echo "Loading ${prefix}${ramdisk_name}..."
-load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
-setenv ramdisk_size "${filesize}"
-
-#bootefi ${kernel_addr_r} ${fdt_addr_r}
-booti ${kernel_addr_r} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
+    booti ${kernel_addr_r} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
+else
+    echo "Loading ${prefix}${fitimage_name}..."
+    load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${fitimage_name}"
+    bootm ${kernel_addr_r}
+fi
