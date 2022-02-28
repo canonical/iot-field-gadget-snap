@@ -29,7 +29,7 @@ parts:
     override-build: |
       # Obviously, use config for your hardware. {sunxi, in my case}
       # u-boot is being built as a payload for OpenSBI, so we build in smode.
-      #ARCH=riscv make qemu-riscv64_smode_defconfig
+      ARCH=riscv make qemu-riscv64_smode_defconfig
 
       ## Relevant config options for Qemu
       # CONFIG_ENV_IS_NOWHERE is not set
@@ -39,16 +39,16 @@ parts:
       # CONFIG_ENV_FAT_FILE="boot.scr"
 
       ## Just carry over our config:
-      cp ${SNAPCRAFT_PROJECT_DIR}/u-boot/config ./.config
+      cp ${SNAPCRAFT_PROJECT_DIR}/u-boot/config ${SNAPCRAFT_PART_BUILD}/.config
 
       ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
 
-      mkenvimage -r -s 0x2000 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+      tools/mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
       touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
       cp ${SNAPCRAFT_PART_BUILD}/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
 
     build-packages:
-      - libpython2.7-dev
+      - libpython3.9-dev
       - bc
       - bison
       - flex
@@ -56,6 +56,7 @@ parts:
     prime:
       - boot.sel
       - uboot.conf
+      - u-boot.bin
 
   boot-scr:
     plugin: nil
