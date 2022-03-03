@@ -6,6 +6,7 @@ setenv devnum 0
 setenv seedpart 1
 # The ubuntu-boot partition
 setenv bootpart 2
+# Addr values should be changed for real hardware, probably.
 # Address to load the config to
 setenv config_addr_r  0x82200000
 # Address to load the FDT to
@@ -58,6 +59,8 @@ setenv bootargs "earlycon=sbi console=ttyS0 rw snapd_recovery_mode=${snapd_recov
 # Load all files
 if test "${use_fitimage}" = "0"
 then
+    # We can skip loading our device tree here because Qemu
+    # automatically injects it into our environment.
     #echo "Loading ${prefix}${fdt_name}..."
     #load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
 
