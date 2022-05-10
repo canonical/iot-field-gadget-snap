@@ -6,11 +6,10 @@ setenv devnum 0
 setenv seedpart 1
 # The ubuntu-boot partition
 setenv bootpart 2
-# Addr values should be changed for real hardware, probably.
-# Address to load the config to
-setenv config_addr_r  0x82200000
 # Address to load the FDT to
-setenv fdt_addr_r     0xff73bb00
+setenv fdt_addr_r     0x82200000
+# Address to load the config to
+setenv config_addr_r  0x82210000
 # Address to load the kernel to
 setenv kernel_addr_r  0x82250000
 # Address to load the initrd to.
