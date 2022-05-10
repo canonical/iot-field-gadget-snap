@@ -1,15 +1,13 @@
-name: virt
+name: sipeed-lichee-rv-gadget
 version: 20-1
-summary: RISCV virt board gadget
+summary: Sipeed Lichee RV gadget
 description: |
-  Support files for booting Qemu's RISCV virt board.
+  Support files for booting Sipeed Lichee RV gadget
 type: gadget
 base: core20
 assumes: [kernel-assets]
 architectures:
-  - build-on:
-      - amd64
-      - riscv64
+  - build-on: [amd64, riscv64]
     run-on: riscv64
 
 package-repositories:
@@ -19,77 +17,77 @@ package-repositories:
 confinement: strict
 grade: stable
 
+# Adapted from https://fedoraproject.org/wiki/Architectures/RISC-V/Allwinner
+
 parts:
-  u-boot-smode:
+  u-boot:
+    after:
+      - opensbi
     plugin: make
-    source: https://github.com/u-boot/u-boot.git
+    source: https://github.com/smaeul/u-boot.git
     source-type: git
-    source-branch: v2022.01
+    source-branch: d1-wip
     source-depth: 1
     override-build: |
-      # Obviously, use config for your hardware. {sunxi, in my case}
-      # u-boot is being built as a payload for OpenSBI, so we build in smode.
-      ARCH=riscv make qemu-riscv64_smode_defconfig
-
-      ## Relevant config options for Qemu
-      # CONFIG_ENV_IS_NOWHERE is not set
-      # CONFIG_ENV_IS_IN_FAT=y
-      # CONFIG_ENV_FAT_INTERFACE="virtio"
-      # CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
-      # CONFIG_ENV_FAT_FILE="boot.scr"
-
-      ## Just carry over our config:
-      cp ${SNAPCRAFT_PROJECT_DIR}/u-boot/config ${SNAPCRAFT_PART_BUILD}/.config
-
-      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
-
+      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- nezha_defconfig
+      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- -j$(nproc)
+      make CROSS_COMPILE=riscv64-linux-gnu- ARCH=riscv u-boot.bin u-boot.dtb
+      cp ${SNAPCRAFT_PART_BUILD}/../../opensbi/build/build/platform/generic/firmware/fw_dynamic.bin .
       tools/mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
       touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
-      cp ${SNAPCRAFT_PART_BUILD}/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
-
+      tools/mkimage -T sunxi_toc1 -d ${SNAPCRAFT_PROJECT_DIR}/u-boot/toc1.cfg ${SNAPCRAFT_PART_INSTALL}/u-boot.toc1
     build-packages:
-      - libpython3.9-dev
       - bc
-      - bison
-      - flex
-      - libssl-dev
     prime:
+      - u-boot.toc1
       - boot.sel
       - uboot.conf
-      - u-boot.bin
+    build-packages:
+      - libpython3-dev
+      - libssl-dev
 
   boot-scr:
     plugin: nil
-    source: .
+    source: u-boot
     override-build: |
-      # Make specifically a RISC-V boot script.
-      mkimage \
-        -T script \
-        -A riscv \
-        -C none \
-        -n 'Boot Script' \
-        -d ${SNAPCRAFT_PROJECT_DIR}/u-boot/boot.scr.in \
-        ${SNAPCRAFT_PART_INSTALL}/boot.scr
+      mkimage -T script -C none -n 'Boot Script' -d boot.scr.in ${SNAPCRAFT_PART_INSTALL}/boot.scr
     build-packages:
       - sed
       - u-boot-tools
 
   opensbi:
-    after: 
-      - u-boot-smode
     plugin: make
-    source: https://github.com/riscv-software-src/opensbi
+    source: https://github.com/smaeul/opensbi.git
     source-type: git
+    source-branch: d1-wip
     source-depth: 1
     override-build: |
-      # Build OpenSBI with the u-boot code builtin
-      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${SNAPCRAFT_PART_BUILD}/../../u-boot-smode/install/u-boot.bin
+      CROSS_COMPILE=riscv64-linux-gnu- PLATFORM=generic FW_PIC=y BUILD_INFO=y make
+      cp ${SNAPCRAFT_PART_BUILD}/build/platform/generic/firmware/fw_dynamic.bin \
+          ${SNAPCRAFT_PART_INSTALL}/
+    prime:
+      - -fw_dynamic.bin
 
-      cp ${SNAPCRAFT_PART_BUILD}/build/platform/generic/firmware/fw_payload.elf \
-        ${SNAPCRAFT_PART_INSTALL}/
+  spl:
+    plugin: nil
+    source: https://github.com/smaeul/sun20i_d1_spl.git
+    source-type: git
+    source-branch: mainline
+    source-depth: 1
+    override-build: |
+      make CROSS_COMPILE=riscv64-linux-gnu- p=sun20iw1p1 mmc
+      cp ${SNAPCRAFT_PART_BUILD}/nboot/boot0_sdcard_sun20iw1p1.bin ${SNAPCRAFT_PART_INSTALL}/
+
+  # These files were present on the reference image - no idea what they're needed for
+  boot-misc:
+    plugin: dump
+    source: boot
 
 build-packages:
   - build-essential
+  - ccache
+  - python3-distutils
+  - swig
   - on amd64:
     - gcc-riscv64-linux-gnu
   - else:
