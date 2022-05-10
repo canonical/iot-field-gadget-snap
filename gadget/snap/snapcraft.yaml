@@ -7,10 +7,8 @@ type: gadget
 base: core20
 assumes: [kernel-assets]
 architectures:
-  - build-on:
-      - amd64
-      - riscv64
-    run-on: riscv64
+  - build-on: [amd64, riscv64]
+    run-on:   [riscv64]
 
 package-repositories:
   - type: apt
@@ -27,8 +25,6 @@ parts:
     source-branch: v2022.01
     source-depth: 1
     override-build: |
-      # Obviously, use config for your hardware. {sunxi, in my case}
-      # u-boot is being built as a payload for OpenSBI, so we build in smode.
       ARCH=riscv make qemu-riscv64_smode_defconfig
 
       ## Relevant config options for Qemu
@@ -48,10 +44,10 @@ parts:
       cp ${SNAPCRAFT_PART_BUILD}/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
 
     build-packages:
-      - libpython3.9-dev
       - bc
       - bison
       - flex
+      - libpython3-dev
       - libssl-dev
     prime:
       - boot.sel
@@ -62,7 +58,6 @@ parts:
     plugin: nil
     source: .
     override-build: |
-      # Make specifically a RISC-V boot script.
       mkimage \
         -T script \
         -A riscv \
@@ -82,7 +77,6 @@ parts:
     source-type: git
     source-depth: 1
     override-build: |
-      # Build OpenSBI with the u-boot code builtin
       ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${SNAPCRAFT_PART_BUILD}/../../u-boot-smode/install/u-boot.bin
 
       cp ${SNAPCRAFT_PART_BUILD}/build/platform/generic/firmware/fw_payload.elf \
