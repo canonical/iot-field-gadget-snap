@@ -1,32 +1,34 @@
 # mmc/scsi etc
-setenv devtype virtio
+setenv devtype mmc
 # The device number of the given type
 setenv devnum 0
 # The ubuntu-seed partition
 setenv seedpart 1
 # The ubuntu-boot partition
 setenv bootpart 2
-# Addr values should be changed for real hardware, probably.
 # Address to load the config to
-setenv config_addr_r  0x82200000
-# Address to load the FDT to
-setenv fdt_addr_r     0xff73bb00
+setenv config_addr_r 0xa00000
 # Address to load the kernel to
-setenv kernel_addr_r  0x82250000
+setenv kernel_addr_r 0x5000000
+# Address to load the FDT to
+setenv fdt_dock_addr_r  0x4f00000
+setenv fdt_board_addr_r 0x4f06000
 # Address to load the initrd to.
-setenv ramdisk_addr_r 0xa0000000
+setenv ramdisk_addr_r 0x8000000
 # Kernel image filename
 setenv kernel_name kernel.img
 # Ramdisk filename
 setenv ramdisk_name initrd.img
 # FDT filename
-setenv fdt_name dtbs/riscv64-virt.dtb
+setenv fdt_board sun20i-d1-lichee-rv.dtb
+setenv fdt_dock  sun20i-d1-lichee-rv-dock.dtb
+
 # fitImage filename
 setenv fitimage_name fitImage
 # Use fitImage
 setenv use_fitimage 0
 # Address to decompress the kernel image to.
-setenv kernel_comp_addr_r 0x80200000
+setenv kernel_comp_addr_r 0x20000000
 
 echo "Loading ubuntu-seed configuration..."
 load ${devtype} ${devnum}:${seedpart} ${config_addr_r} uboot/ubuntu/boot.sel
@@ -40,7 +42,7 @@ then
     load ${devtype} ${devnum}:${bootpart} ${config_addr_r} uboot/ubuntu/boot.sel
     env import ${config_addr_r}
     setenv kernel_bootpart "${bootpart}"
-    if test "${snapd_recovery_mode}" = "try"
+    if test "${kernel_status}" = "try"
     then
         echo "Trying to boot with ${snap_kernel}"
         setenv prefix "uboot/ubuntu/${snap_try_kernel}/"
@@ -54,19 +56,20 @@ else
     setenv kernel_bootpart "${seedpart}"
 fi
 
-setenv bootargs "earlycon=sbi console=ttyS0 rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
+setenv console "earlycon=sbi console=ttyS0""
+setenv bootargs "${console} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system} ${bootargs}"
 
 # Load all files
 if test "${use_fitimage}" = "0"
 then
-    # We can skip loading our device tree here because Qemu
-    # automatically injects it into our environment.
-    #echo "Loading ${prefix}${fdt_name}..."
-    #load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
-
     echo "Loading ${prefix}${kernel_name}..."
     load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
+    # Maximum size of the decompressed kernel
     setenv kernel_comp_size "${filesize}"
+
+    echo "Loading ${prefix}${fdt_name}..."
+    load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_dock_addr_r}  "${prefix}${fdt_dock}"
+    load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_board_addr_r} "${prefix}${fdt_board}"
 
     echo "Loading ${prefix}${ramdisk_name}..."
     load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
