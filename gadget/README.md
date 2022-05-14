@@ -3,12 +3,9 @@
 The gadget snap defines the structure & boot mechanisms of our device, amongst
 many other things. As such, this snap is also quite device specific.
 
-In this case, we are building u-boot to be carried as a payload for OpenSBI.
-From there, we hope to exec the system, whether it be to bootstrap Ubuntu Core
-or run as normal.
-
-Much like the kernel, u-boot is very device specific. Modify
-`snap/snapcraft.yaml` as necessary for your device.
+In this case, we are packaging an entire boot stack; from the zero stage
+bootloader all the way up to our final bootloader (u-boot), which will land us
+into a UC20 userspace.
 
 Building:
 
@@ -17,7 +14,45 @@ Building:
 
 ## Academic Information
 
-To be explained.
+The Sipeed Lichee RV has some specific requirements to boot!
+
+This board's bootrom is setup to execute the zero stage bootloader at a specific
+point on disk, and we likewise require a cfg file to be at a specific location
+on disk.
+
+This cfg file will detail the location OpenSBI, the device tree, and the u-boot
+binary are to be loaded into memory. more importantly, this cfg file also
+*contains* the relevant binary and dtb files. As such, this gadget builds many
+components, but only ships a few objects; the relevant early-stage boot files
+are bundled in a single file and written to a nonpartition on the device image.
+
+**NOTE**: this board has an optional dock! This particular branch builds with
+the dock in mind -- if you are using the board without its optional dock, be
+sure to modify the relevant device tree files!
+
+**NOTE**: while the dock includes an HDMI port, the only way to get output to it
+requires modifying `sysfs`:
+
+```
+echo disp0 >                      /sys/kernel/debug/dispdbg/name
+echo switch1 >                    /sys/kernel/debug/dispdbg/command
+echo 4 10 0 0 0x4 0x101 0 0 0 8 > /sys/kernel/debug/dispdbg/param
+echo 1 >                          /sys/kernel/debug/dispdbg/start
+```
+
+This could potentially be added to a snap to allow this output by default on
+Ubuntu Core. However, I do not believe any currently existing interfaces allow
+modifying this particular `sysfs` location. You could use a devmode snap in the
+meantime.
+
+Currently, this gadget snap is in some way broken. Without a UART connection, I
+cannot debug; this should be solved soon(tm).
+
+For some very useful resources on this board specifically,
+
+[Building a bootable rootfs](https://andreas.welcomes-you.com/boot-sw-debian-risc-v-lichee-rv/)
+[Useful board facts](https://linux-sunxi.org/Sipeed_Lichee_RV)
+[Fedora's writeup](https://fedoraproject.org/wiki/Architectures/RISC-V/Allwinner)
 
 
 ## For Beginners
