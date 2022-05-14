@@ -20,6 +20,47 @@ grade: stable
 # Adapted from https://fedoraproject.org/wiki/Architectures/RISC-V/Allwinner
 
 parts:
+  boot-scr:
+    plugin: nil
+    source: u-boot
+    override-build: |
+      mkimage \
+        -T script \
+        -C none \
+        -n 'Boot Script' \
+        -d boot.scr.in \
+        ${SNAPCRAFT_PART_INSTALL}/boot.scr
+    build-packages:
+      - u-boot-tools
+
+  spl:
+    plugin: nil
+    source: https://github.com/smaeul/sun20i_d1_spl.git
+    source-type: git
+    source-branch: mainline
+    source-depth: 1
+    override-build: |
+      make \
+        CROSS_COMPILE=riscv64-linux-gnu- \
+        p=sun20iw1p1 \
+        mmc
+
+      cp -f ${SNAPCRAFT_PART_BUILD}/nboot/boot0_sdcard_sun20iw1p1.bin \
+        ${SNAPCRAFT_PART_INSTALL}/
+
+  opensbi:
+    plugin: make
+    source: https://github.com/smaeul/opensbi.git
+    source-type: git
+    source-branch: d1-wip
+    source-depth: 1
+    override-build: |
+      CROSS_COMPILE=riscv64-linux-gnu- \
+        PLATFORM=generic \
+        FW_OPTIONS=0x2 \
+        FW_PIC=y \
+        make
+
   u-boot:
     after:
       - opensbi
@@ -30,14 +71,21 @@ parts:
     source-depth: 1
     override-build: |
       make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- nezha_defconfig
-      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- -j$(nproc)
-      make CROSS_COMPILE=riscv64-linux-gnu- ARCH=riscv u-boot.bin u-boot.dtb
-      cp ${SNAPCRAFT_PART_BUILD}/../../opensbi/build/build/platform/generic/firmware/fw_dynamic.bin .
-      tools/mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- -j$(nproc) all
+
+      mv -f arch/riscv/dts/sun20i-d1-lichee-rv-dock.dtb .
+      mv -f ${SNAPCRAFT_PART_SRC}/../../opensbi/build/build/platform/generic/firmware/fw_dynamic.bin .
+
+      tools/mkenvimage \
+        -r -s 4096 \
+        -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+
+      tools/mkimage \
+        -T sunxi_toc1 \
+        -d ${SNAPCRAFT_PROJECT_DIR}/u-boot/toc1.cfg \
+        ${SNAPCRAFT_PART_INSTALL}/u-boot.toc1
+
       touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
-      tools/mkimage -T sunxi_toc1 -d ${SNAPCRAFT_PROJECT_DIR}/u-boot/toc1.cfg ${SNAPCRAFT_PART_INSTALL}/u-boot.toc1
-    build-packages:
-      - bc
     prime:
       - u-boot.toc1
       - boot.sel
@@ -45,49 +93,11 @@ parts:
     build-packages:
       - libpython3-dev
       - libssl-dev
-
-  boot-scr:
-    plugin: nil
-    source: u-boot
-    override-build: |
-      mkimage -T script -C none -n 'Boot Script' -d boot.scr.in ${SNAPCRAFT_PART_INSTALL}/boot.scr
-    build-packages:
-      - sed
-      - u-boot-tools
-
-  opensbi:
-    plugin: make
-    source: https://github.com/smaeul/opensbi.git
-    source-type: git
-    source-branch: d1-wip
-    source-depth: 1
-    override-build: |
-      CROSS_COMPILE=riscv64-linux-gnu- PLATFORM=generic FW_PIC=y BUILD_INFO=y make
-      cp ${SNAPCRAFT_PART_BUILD}/build/platform/generic/firmware/fw_dynamic.bin \
-          ${SNAPCRAFT_PART_INSTALL}/
-    prime:
-      - -fw_dynamic.bin
-
-  spl:
-    plugin: nil
-    source: https://github.com/smaeul/sun20i_d1_spl.git
-    source-type: git
-    source-branch: mainline
-    source-depth: 1
-    override-build: |
-      make CROSS_COMPILE=riscv64-linux-gnu- p=sun20iw1p1 mmc
-      cp ${SNAPCRAFT_PART_BUILD}/nboot/boot0_sdcard_sun20iw1p1.bin ${SNAPCRAFT_PART_INSTALL}/
-
-  # These files were present on the reference image - no idea what they're needed for
-  boot-misc:
-    plugin: dump
-    source: boot
+      - python3-distutils
+      - swig
 
 build-packages:
   - build-essential
-  - ccache
-  - python3-distutils
-  - swig
   - on amd64:
     - gcc-riscv64-linux-gnu
   - else:
