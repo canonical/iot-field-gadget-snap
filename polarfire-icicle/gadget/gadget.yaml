@@ -4,47 +4,23 @@ volumes:
     bootloader: u-boot
     structure:
       - name: spl
-        offset: 8192
         type: bare
+        offset: 131072
         size: 65536
         content:
           - image: boot0_sdcard_sun20iw1p1.bin
       - name: toc1
-        offset: 16793600
         type: bare
+        offset: 16793600
         size: 1048576
         content:
           - image: u-boot.toc1
-      - name: boot-resource
-        filesystem: vfat
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        size: 4M
-        offset: 21229568
-        content:
-          - source: bootlogo.bmp
-            target: /
-          - source: magic.bin
-            target: /
-      - name: env
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        size: 262144
-      - name: env-redund
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        size: 262144
-      - name: boot
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        size: 11M
-      - name: dsp0
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        size: 524288
-      - name: recovery
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        size: 14M
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
         type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
         size: 1500M
+        offset: 40M 
         content:
           - source: boot.scr
             target: /
