@@ -34,15 +34,14 @@ parts:
       # CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
       # CONFIG_ENV_FAT_FILE="boot.scr"
 
-      ## Just carry over our config:
-      cp ${SNAPCRAFT_PROJECT_DIR}/u-boot/config ${SNAPCRAFT_PART_BUILD}/.config
+      ## Just carry over our config for now:
+      cp -f ${SNAPCRAFT_PROJECT_DIR}/u-boot/config ${SNAPCRAFT_PART_BUILD}/.config
 
       ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
 
+      cp -f ${SNAPCRAFT_PART_BUILD}/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
       tools/mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
       touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
-      cp ${SNAPCRAFT_PART_BUILD}/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
-
     build-packages:
       - bc
       - bison
@@ -79,7 +78,7 @@ parts:
     override-build: |
       ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${SNAPCRAFT_PART_BUILD}/../../u-boot-smode/install/u-boot.bin
 
-      cp ${SNAPCRAFT_PART_BUILD}/build/platform/generic/firmware/fw_payload.elf \
+      cp -f ${SNAPCRAFT_PART_BUILD}/build/platform/generic/firmware/fw_payload.elf \
         ${SNAPCRAFT_PART_INSTALL}/
 
 build-packages:
