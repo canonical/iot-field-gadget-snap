@@ -1,31 +1,22 @@
-# mmc/scsi etc
+## We can skip loading our device tree here because Qemu
+## automatically loads it into the machine for us.
+
+# mmc/scsi etc & number
 setenv devtype virtio
-# The device number of the given type
-setenv devnum 0
-# The ubuntu-seed partition
+setenv devnum  0
+# The ubuntu-{boot,seed} partitions
 setenv seedpart 1
-# The ubuntu-boot partition
 setenv bootpart 2
-# Address to load the FDT to
+
+# Addresses to load the FDT, config, kernel, & initrd to
 setenv fdt_addr_r     0x82200000
-# Address to load the config to
 setenv config_addr_r  0x82210000
-# Address to load the kernel to
 setenv kernel_addr_r  0x82250000
-# Address to load the initrd to.
 setenv ramdisk_addr_r 0xa0000000
-# Kernel image filename
-setenv kernel_name kernel.img
-# Ramdisk filename
+
+# Kernel, initrd, & FDT filenames
+setenv kernel_name  kernel.img
 setenv ramdisk_name initrd.img
-# FDT filename
-setenv fdt_name dtbs/riscv64-virt.dtb
-# fitImage filename
-setenv fitimage_name fitImage
-# Use fitImage
-setenv use_fitimage 0
-# Address to decompress the kernel image to.
-setenv kernel_comp_addr_r 0x80200000
 
 echo "Loading ubuntu-seed configuration..."
 load ${devtype} ${devnum}:${seedpart} ${config_addr_r} uboot/ubuntu/boot.sel
@@ -53,27 +44,14 @@ else
     setenv kernel_bootpart "${seedpart}"
 fi
 
-setenv bootargs "earlycon=sbi console=ttyS0 rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
+setenv console  "earlycon=sbi console=ttyS0"
+setenv bootargs "${console} snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
 
-# Load all files
-if test "${use_fitimage}" = "0"
-then
-    # We can skip loading our device tree here because Qemu
-    # automatically injects it into our environment.
-    #echo "Loading ${prefix}${fdt_name}..."
-    #load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
+echo "Loading ${prefix}${kernel_name}..."
+load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
 
-    echo "Loading ${prefix}${kernel_name}..."
-    load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
-    setenv kernel_comp_size "${filesize}"
+echo "Loading ${prefix}${ramdisk_name}..."
+load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
+setenv ramdisk_size "${filesize}"
 
-    echo "Loading ${prefix}${ramdisk_name}..."
-    load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
-    setenv ramdisk_size "${filesize}"
-
-    booti ${kernel_addr_r} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
-else
-    echo "Loading ${prefix}${fitimage_name}..."
-    load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${fitimage_name}"
-    bootm ${kernel_addr_r}
-fi
+booti ${kernel_addr_r} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
