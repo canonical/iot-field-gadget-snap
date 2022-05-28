@@ -45,9 +45,6 @@ Ubuntu Core. However, I do not believe any currently existing interfaces allow
 modifying this particular `sysfs` location. You could use a devmode snap in the
 meantime.
 
-Currently, this gadget snap is in some way broken. Without a UART connection, I
-cannot debug; this should be solved soon(tm).
-
 For some very useful resources on this board specifically,
 
 [Building a bootable rootfs](https://andreas.welcomes-you.com/boot-sw-debian-risc-v-lichee-rv/)
@@ -85,10 +82,9 @@ Some important things to know:
 3) Given that you have to modify some files, what may they be? 
     * It's unlikely that you'll have to modify the `gadget.yaml` too much
     
-    * You'll have to use a different config than the one provided by
-      `u-boot/config`. Building u-boot is similar to building the kernel;
-      get the sources, do `make foo_defconfig` for your hardware, 
-      `make menuconfig` to tweak.
+    * You'll have to use a different config for u-boot. Building u-boot is
+      similar to building the kernel; get the sources, do `make foo_defconfig`
+      for your hardware, `make menuconfig` to tweak.
     
     * You'll have to tweak the addresses defined in `u-boot/boot.scr.in` -
       these are very much specific to your board, as the amount of RAM
@@ -110,4 +106,4 @@ kernel. And from there, it's a whole new ball game.
 
 
 If you have any questions, don't hesitate to ask (email)! If you identify an
-issue, make an Issue. If you have something to add, open a PR!
+issue, make an issue. If you have something to add, open a PR!
