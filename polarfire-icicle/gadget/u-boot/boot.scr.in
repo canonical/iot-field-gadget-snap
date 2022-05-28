@@ -1,5 +1,5 @@
 ## Note that a lot of environment variables are already defined!
-## Specifically, kernel_addr_r & fdtcontroladdr
+## Specifically, kernel_addr_r, ramdisk_addr_r, & fdtcontroladdr
 ## Our device tree is also already preloaded by u-boot.toc1
 
 # mmc/scsi etc & number
@@ -9,14 +9,11 @@ setenv devnum   0
 setenv seedpart 1
 setenv bootpart 2
 
-# Address to load the config, kernel, fdt, & initrd to
-setenv config_addr_r  0x4faf0000
-#setenv fdt_addr_r     0x4faf2000
+# Address to load the config & ramdisk to
+setenv config_addr_r  0x41900000
 setenv ramdisk_addr_r 0x50000000
-#setenv kernel_addr_r  0x52000000
 
 # Kernel, initrd, & fdt filename
-#setenv fdt_name     sun20i-d1-lichee-rv-dock.dtb
 setenv ramdisk_name initrd.img
 setenv kernel_name  kernel.img
 
@@ -46,13 +43,13 @@ else
 fi
 
 setenv console "earlycon=sbi console=ttyS0,115200n8"
-setenv bootargs "${console} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system} ${bootargs} delayacct slub_debug"
+setenv bootargs "${console} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
 
 echo "Loading kernel from ${devtype} ${devnum}:${kernel_bootpart} to address ${kernel_addr_r}"
 load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
 
 echo "Loading initrd from ${devtype} ${devnum}:${kernel_bootpart} to address ${ramdisk_addr_r}"
-load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${initrd_name}"
+load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
 setenv ramdisk_size "${filesize}"
 
 echo "Booting kernel with bootargs as ${bootargs}"
