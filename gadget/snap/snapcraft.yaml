@@ -8,11 +8,7 @@ base: core20
 assumes: [kernel-assets]
 architectures:
   - build-on: [amd64, riscv64]
-    run-on: riscv64
-
-package-repositories:
-  - type: apt
-    ppa: snappy-dev/image
+    run-on:   [riscv64]
 
 confinement: strict
 grade: stable
@@ -73,8 +69,8 @@ parts:
       make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- nezha_defconfig
       make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- -j$(nproc) all
 
-      mv -f arch/riscv/dts/sun20i-d1-lichee-rv-dock.dtb .
-      mv -f ${SNAPCRAFT_PART_SRC}/../../opensbi/build/build/platform/generic/firmware/fw_dynamic.bin .
+      cp -f arch/riscv/dts/sun20i-d1-lichee-rv-dock.dtb .
+      cp -f ${SNAPCRAFT_PART_SRC}/../../opensbi/build/build/platform/generic/firmware/fw_dynamic.bin .
 
       tools/mkenvimage \
         -r -s 4096 \
