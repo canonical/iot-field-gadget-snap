@@ -27,7 +27,7 @@ volumes:
       - name: ubuntu-boot
         role: system-boot
         filesystem: ext4
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         size: 750M
         content:
           - source: boot.sel
@@ -35,10 +35,10 @@ volumes:
       - name: ubuntu-save
         role: system-save
         filesystem: ext4
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         size: 16M
       - name: ubuntu-data
         role: system-data
         filesystem: ext4
-        type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         size: 3G
