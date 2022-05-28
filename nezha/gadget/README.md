@@ -122,4 +122,4 @@ kernel. And from there, it's a whole new ball game.
 
 
 If you have any questions, don't hesitate to ask (email)! If you identify an
-issue, make an Issue. If you have something to add, open a PR!
+issue, make an issue. If you have something to add, open a PR!
