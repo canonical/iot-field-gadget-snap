@@ -1,0 +1,45 @@
+---
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2022 Isaac True
+
+volumes:
+  odroid-hc4:
+    schema: mbr
+    bootloader: u-boot
+    structure:
+      - name: u-boot
+        offset: 512
+        type: bare
+        size: 1048064
+        content:
+          - image: u-boot.bin
+        update:
+          edition: 1
+      - name: ubuntu-seed
+        role: system-seed
+        filesystem: vfat
+        type: "0C"
+        size: 1500M
+        content:
+          - source: boot.scr
+            target: /
+        update:
+          edition: 1
+      - name: ubuntu-boot
+        role: system-boot
+        filesystem: ext4
+        type: "83"
+        size: 1500M
+        content:
+          - source: boot.sel
+            target: uboot/ubuntu/boot.sel
+      - name: ubuntu-save
+        role: system-save
+        filesystem: ext4
+        type: "83"
+        size: 16M
+      - name: ubuntu-data
+        role: system-data
+        filesystem: ext4
+        type: "83"
+        size: 1G
