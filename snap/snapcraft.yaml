@@ -1,0 +1,81 @@
+---
+# SPDX-License-Identifier: GPL-2.0
+# Copyright (C) 2022 Isaac True
+
+name: odroid-hc4-gadget
+base: core22
+summary: Gadget snap for the ODROID HC4 platform
+description: |
+  Gadget snap for the ODROID HC4 platform
+type: gadget
+confinement: devmode
+grade: devel
+version: v2015.01
+
+architectures:
+  - build-on: amd64
+    run-on: [arm64]
+
+parts:
+  # The Hardkernel U-Boot only supports <= GCC 4, which isn't available in 20.04
+  toolchain-aarch64:
+    source: https://releases.linaro.org/archive/14.11/components/toolchain/binaries/aarch64-none-elf/gcc-linaro-4.9-2014.11-x86_64_aarch64-elf.tar.xz
+    plugin: dump
+    stage:
+      - -*
+    prime:
+      - -*
+
+  # Not sure why armhf is needed but it's in the install guide for the ODROID HC4 (maybe for the ATF?)
+  toolchain-armhf:
+    source: https://releases.linaro.org/archive/14.11/components/toolchain/binaries/arm-none-eabi/gcc-linaro-4.9-2014.11-x86_64_arm-eabi.tar.xz
+    plugin: dump
+    stage:
+      - -*
+    prime:
+      - -*
+
+  # From https://wiki.odroid.com/odroid-hc4/software/building_u-boot
+  u-boot:
+    after:
+      - toolchain-armhf
+      - toolchain-aarch64
+    plugin: nil
+    build-environment:
+      - PATH: "${SNAPCRAFT_PROJECT_DIR}/parts/toolchain-aarch64/install/bin:${SNAPCRAFT_PROJECT_DIR}/parts/toolchain-armhf/install/bin:${PATH}"
+    source: https://github.com/hardkernel/u-boot.git
+    source-type: git
+    source-branch: odroidg12-v2015.01
+    override-build: |
+      make odroidc4_defconfig
+      make -j$(nproc)
+      cp sd_fuse/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
+    build-packages:
+      - bc
+      - make
+
+  # U-Boot script
+  boot-scr:
+    after:
+      - u-boot
+    plugin: nil
+    source: u-boot
+    override-build: |
+      ../../u-boot/build/build/tools/mkimage \
+        -A arm64 -T script -C none -n 'Boot Script' -d boot.scr \
+        ${SNAPCRAFT_PART_INSTALL}/boot.scr
+
+  # Make an empty environment file so that Ubuntu Core can edit it later
+  boot-sel:
+    after:
+      - u-boot
+    plugin: nil
+    override-build: |
+      ../../u-boot/build/build/tools/mkenvimage \
+        -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+
+  # Required by Ubuntu Core
+  uboot-conf:
+    plugin: nil
+    override-build: |
+      touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
