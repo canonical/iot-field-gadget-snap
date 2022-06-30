@@ -66,8 +66,13 @@ parts:
     source-branch: d1-wip
     source-depth: 1
     override-build: |
-      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- nezha_defconfig
-      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- -j$(nproc) all
+      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- lichee_rv_defconfig
+
+      sed -i 's/CONFIG_DEFAULT_DEVICE_TREE="sun20i-d1-lichee-rv"/CONFIG_DEFAULT_DEVICE_TREE="sun20i-d1-lichee-rv-dock"/' ${SNAPCRAFT_PART_BUILD}/.config
+      sed -i 's/# CONFIG_OF_LIBFDT_OVERLAY is not set/CONFIG_OF_LIBFDT_OVERLAY=y/' ${SNAPCRAFT_PART_BUILD}/.config
+
+
+      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- all
 
       cp -f arch/riscv/dts/sun20i-d1-lichee-rv-dock.dtb .
       cp -f ${SNAPCRAFT_PART_SRC}/../../opensbi/build/build/platform/generic/firmware/fw_dynamic.bin .
