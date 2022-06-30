@@ -19,7 +19,7 @@ volumes:
         role: system-seed
         filesystem: vfat
         type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        size: 1500M
+        size: 700M
         offset: 40M 
         content:
           - source: boot.scr
@@ -28,7 +28,7 @@ volumes:
         role: system-boot
         filesystem: ext4
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
-        size: 750M
+        size: 700M
         content:
           - source: boot.sel
             target: uboot/ubuntu/boot.sel
