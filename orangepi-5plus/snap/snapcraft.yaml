@@ -79,3 +79,10 @@ parts:
     plugin: nil
     override-build: |
       touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
+
+slots:
+  dev-zfs:
+    interface: custom-device
+    custom-device: zfs
+    devices:
+      - /dev/zfs
