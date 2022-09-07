@@ -93,11 +93,12 @@ parts:
         patch -p1 < ${CRAFT_PROJECT_DIR}/patches/hss-0001-icicle-use-mainline-seg-register-values.patch
     override-build: |
       CONSOLE_TOOLS=$(find ${CRAFT_PROJECT_DIR} -name "SoftConsole-*" -type d)
-      [ -d "${CONSOLE_TOOLS}" ] || \
-        echo "Please install the toolchain available from SoftConsole" \
-        echo "Toolchains are available at:" \
-        echo "https://www.microchip.com/en-us/products/fpgas-and-plds/fpga-and-soc-design-tools/soc-fpga/softconsole#downloads" \
+      if [ ! -d ${CONSOLE_TOOLS} ]; then
+        echo "Please install the toolchain available from SoftConsole"
+        echo "Toolchains are available at:"
+        echo "https://www.microchip.com/en-us/products/fpgas-and-plds/fpga-and-soc-design-tools/soc-fpga/softconsole#downloads" 
         exit 1
+      fi
       export PATH=${CONSOLE_TOOLS}/riscv-unknown-elf-gcc/bin:$PATH
 
       cp -f boards/mpfs-icicle-kit-es/def_config .config
