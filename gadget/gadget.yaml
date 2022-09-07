@@ -1,37 +1,31 @@
 volumes:
-  sipeed-lichee-rv:
+  polarfire:
     schema: gpt
     bootloader: u-boot
     structure:
-      - name: spl
-        type: bare
-        offset: 131072
-        size: 65536
-        content:
-          - image: boot0_sdcard_sun20iw1p1.bin
-      - name: toc1
-        type: bare
-        offset: 16793600
-        size: 1048576
-        content:
-          - image: u-boot.toc1
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
         type: EBD0A0A2-B9E5-4433-87C0-68B6B72699C7
-        size: 700M
-        offset: 40M 
+        size: 300M
         content:
           - source: boot.scr
             target: /
+      - name: hss
+        type: 21686148-6449-6E6F-744E-656564454649
+        size: 4M
+        content:
+          - image: payload.bin
       - name: ubuntu-boot
         role: system-boot
         filesystem: ext4
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
-        size: 700M
+        size: 200M
         content:
           - source: boot.sel
             target: uboot/ubuntu/boot.sel
+          - source: boot.scr
+            target: /
       - name: ubuntu-save
         role: system-save
         filesystem: ext4
@@ -41,4 +35,6 @@ volumes:
         role: system-data
         filesystem: ext4
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
-        size: 3G
+        size: 1G
+
+device-tree-origin: kernel
