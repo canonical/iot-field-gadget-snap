@@ -1,57 +1,97 @@
-# The Gadget Snap
-
 The gadget snap defines the structure & boot mechanisms of our device, amongst
 many other things. As such, this snap is also quite device specific.
 
 In this case, we are packaging an entire boot stack; from the zero stage
 bootloader all the way up to our final bootloader (u-boot), which will land us
-into a UC20 userspace.
+into a UC22 userspace.
+
+We are using `base: core22` for this gadget snap. The grammar of our
+`snapcraft.yaml` has changed in important ways as a result.
 
 Building:
 
-`snapcraft --destructive-mode --target-arch=riscv64 --enable-experimental-target-arch`
+`snapcraft --destructive-mode`
 
 
 ## Academic Information
 
-The Sipeed Lichee RV has some specific requirements to boot!
+The Icicle Developer Kit is based off Microchip's Polarfire SoC. The board
+itself has a ton of really interesting features, and - more interestingly for
+this project - has a somewhat unique way of moving from a first stage bootloader
+to the operating system!
 
-This board's bootrom is setup to execute the zero stage bootloader at a specific
-point on disk, and we likewise require a cfg file to be at a specific location
-on disk.
+Let's explore how the Icicle kit boots.
 
-This cfg file will detail the location OpenSBI, the device tree, and the u-boot
-binary are to be loaded into memory. more importantly, this cfg file also
-*contains* the relevant binary and dtb files. As such, this gadget builds many
-components, but only ships a few objects; the relevant early-stage boot files
-are bundled in a single file and written to a nonpartition on the device image.
+Per [The "official" docs](https://u-boot.readthedocs.io/en/latest/board/microchip/mpfs_icicle.html#risc-v-polarfire-soc):
 
-**NOTE**: this board has an optional dock! This particular branch builds with
-the dock in mind -- if you are using the board without its optional dock, be
-sure to modify the relevant device tree names!
+> The current U-Boot port is supported in S-mode only and loaded from DRAM.
+> A prior stage M-mode firmware/bootloader (e.g. HSS with OpenSBI) is required
+> to boot the u-boot.bin in S-mode.
 
-**NOTE**: while the dock includes an HDMI port, the only way to get output to it
-requires modifying `sysfs`:
+The current setup for our bootloader is that the HSS firmware is built with the
+`u-boot-dtb.bin` as a payload, leveraging the bundled OpenSBI binary HSS builds.
 
-```
-echo disp0                      > /sys/kernel/debug/dispdbg/name
-echo switch1                    > /sys/kernel/debug/dispdbg/command
-echo 4 10 0 0 0x4 0x101 0 0 0 8 > /sys/kernel/debug/dispdbg/param
-echo 1                          > /sys/kernel/debug/dispdbg/start
-```
+We use some patches lifted directly from [Microchip's Yocto BSP](https://github.com/polarfire-soc/meta-polarfire-soc-yocto-bsp).
 
-This could potentially be added to a snap to allow this output by default on
-Ubuntu Core. However, I do not believe any currently existing interfaces allow
-modifying this particular `sysfs` location. You could use a devmode snap in the
-meantime.
+With this in mind, we will use Microchip's boot-flow:
 
-For some very useful resources on this board specifically,
+`HSS + OpenSBI (M-Mode) -> U-Boot (S-Mode) -> Linux (S-Mode)`
 
-[Building a bootable rootfs](https://andreas.welcomes-you.com/boot-sw-debian-risc-v-lichee-rv/)
+What this essentially means is that we will build u-boot and HSS (with its own
+bundled dependencies). From there, we will use the `hss-payload-generator` to
+parse a [YAML file](sources/hss.yaml) which defines what payload(s) are
+delivered by the HSS firmware during boot, and where they are loaded from.
 
-[Useful board facts](https://linux-sunxi.org/Sipeed_Lichee_RV)
+There is an important thing to note about this bootflow!
 
-[Fedora's writeup](https://fedoraproject.org/wiki/Architectures/RISC-V/Allwinner)
+Because we are using the OpenSBI bundled with HSS, we incur some... "penalties".
+The largest such problem is that there is no way to reboot the board from
+outside of the supervisor console (`/dev/ttyUSB0`, the HSS supervisor console).
+
+This bug is *bad* for us. Following the Ubuntu Core bootstrapping process, the
+board must reboot. This step requires manual intervention, but this is "in
+general" a fine compromise.
+
+The more challenging aspect of this problem is that *any time* a reboot is
+required (notably, for gadget or kernel snap changes), the system will be
+trapped in a forever-boot-loop, because it will *never* cleanly shutdown. This
+means that our board cannot be updated when reboot-required updates take place.
+
+Luckily, this is set to be fixed in the [September HSS release](https://github.com/orgs/polarfire-soc/discussions/101), hopefully coming soon.
+
+Finally, there is another issue. This problem is with respect to actually
+building HSS. 
+
+HSS is launched from the eNVM on the board during boot. HSS has gotten very
+large since 2020. So big, in fact, that special care has to be taken when
+building it. Unfortunately, this special care is not present on sufficiently
+recent Ubuntu systems (I haven't tested any systems earlier than 20.04, YMMV).
+
+
+ > As a result of this, we truly only support and test against the compiler
+ > bundled with Microchip SoftConsole. While other toolchains can work,
+ > they may indeed have certain issues at any particular point in time.
+
+[Sauce](https://github.com/polarfire-soc/hart-software-services/issues/19)
+
+ > If you are building using the SoftConsole toolchain (which is our
+ > supported toolchain for the HSS) you should not see this issue.
+
+[Sauce](https://github.com/polarfire-soc/hart-software-services/issues/30)
+
+As a result, we should build with the SoftConsole toolchain.  I think it is bad
+praxis to bundle toolchains, so I will not be bundling this (not to mention the
+EULA one must accept in order to use it -- I have no intention of gathering
+legal flak for this). However, you can download it from [here](https://www.microchip.com/en-us/products/fpgas-and-plds/fpga-and-soc-design-tools/soc-fpga/softconsole#downloads).
+
+
+You can find more information on this hardware, how to boot and update it, and
+more from the following sources:
+[Official documentation](https://github.com/polarfire-soc/polarfire-soc-documentation)
+
+[Developing on this hardware](https://github.com/polarfire-soc/polarfire-soc-documentation/blob/master/boards/mpfs-icicle-kit-es/icicle-kit-sw-developer-guide/icicle-kit-sw-developer-guide.md)
+
+[Updating the hardware](https://github.com/polarfire-soc/polarfire-soc-documentation/blob/master/boards/mpfs-icicle-kit-es/updating-icicle-kit/updating-icicle-kit-design-and-linux.md)
 
 
 ## For Beginners
@@ -80,7 +120,7 @@ Some important things to know:
     get someone else to do it for you.
 
 3) Given that you have to modify some files, what may they be? 
-    * It's unlikely that you'll have to modify the `gadget.yaml` too much
+    * You'll likely have to make minimal changes to `gadget.yaml`
     
     * You'll have to use a different config for u-boot. Building u-boot is
       similar to building the kernel; get the sources, do `make foo_defconfig`

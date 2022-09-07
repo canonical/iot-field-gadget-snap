@@ -1,0 +1,59 @@
+# dev & ubuntu-{seed,boot} partitions
+setenv devtype  mmc
+setenv devnum   0
+setenv seedpart 1
+setenv bootpart 3
+
+# Kernel, initrd, & fdt filename
+setenv fdt_name     dtbs/mpfs-icicle-kit.dtb
+setenv kernel_name  kernel.img
+setenv ramdisk_name initrd.img
+# TODO: use a FIT Image
+#setenv fit_config   mpfs-icicle-kit.dtb
+
+echo "Loading ubuntu-seed configuration..."
+load ${devtype} ${devnum}:${seedpart} ${scriptaddr} uboot/ubuntu/boot.sel
+env import ${scriptaddr}
+
+echo "Snapd boot mode: ${snapd_recovery_mode}"
+
+if test "${snapd_recovery_mode}" = "run"
+then
+    echo "Loading ubuntu-boot configuration..."
+    load ${devtype} ${devnum}:${bootpart} ${scriptaddr} uboot/ubuntu/boot.sel
+    env import ${scriptaddr}
+    setenv kernel_bootpart "${bootpart}"
+    if test "${kernel_status}" = "try"
+    then
+        echo "Trying to boot with ${snap_kernel}"
+        setenv prefix "uboot/ubuntu/${snap_try_kernel}/"
+    else
+        echo "Using ${snap_kernel}"
+        setenv prefix "uboot/ubuntu/${snap_kernel}/"
+    fi
+else
+    setenv prefix "systems/${snapd_recovery_system}/kernel/"
+    setenv kernel_bootpart "${seedpart}"
+fi
+
+setenv board_spec "earlycon=sbi uio_pdrv_genirq.of_id=generic-uio"
+setenv bootargs   "${board_spec} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
+
+# TODO: Use a FIT Image
+echo "Loading device tree from ${devtype} ${devnum}:${kernel_bootpart} to address ${fdt_addr_r}"
+load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
+
+echo "Loading initrd from ${devtype} ${devnum}:${kernel_bootpart} to address ${ramdisk_addr_r}"
+load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
+setenv ramdisk_size "${filesize}"
+
+echo "Loading kernel from ${devtype} ${devnum}:${kernel_bootpart} to address ${kernel_addr_r}"
+load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
+
+echo "Booting kernel with bootargs as ${bootargs}"
+booti ${kernel_addr_r} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
+
+#echo "Loading kernel from ${devtype} ${devnum}:${kernel_bootpart} to address ${ramdisk_addr_r}"
+#load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${kernel_name}"
+#
+#bootm ${ramdisk_addr_r}

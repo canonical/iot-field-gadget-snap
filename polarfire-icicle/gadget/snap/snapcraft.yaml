@@ -1,105 +1,298 @@
-name: sipeed-lichee-rv-gadget
-version: 20-1
-summary: Sipeed Lichee RV gadget
+name: polarfire
+version: 22-1
+summary: Microchip PolarFire SoC Icicle gadget
 description: |
-  Support files for booting Sipeed Lichee RV gadget
+  Support files for booting the Microchip PolarFire SoC Icicle
 type: gadget
-base: core20
+base: core22
 assumes: [kernel-assets]
 architectures:
-  - build-on: [amd64, riscv64]
-    run-on:   [riscv64]
+  - build-on:  [amd64, riscv64]
+    build-for: [riscv64]
 
 confinement: strict
 grade: stable
 
-# Adapted from https://fedoraproject.org/wiki/Architectures/RISC-V/Allwinner
-
 parts:
   boot-scr:
     plugin: nil
-    source: u-boot
+    source: sources/
     override-build: |
       mkimage \
-        -T script \
         -C none \
-        -n 'Boot Script' \
+        -O linux \
+        -T script \
         -d boot.scr.in \
-        ${SNAPCRAFT_PART_INSTALL}/boot.scr
+        -n 'U-Boot boot script' \
+        ${CRAFT_PART_INSTALL}/boot.scr
     build-packages:
       - u-boot-tools
 
-  spl:
-    plugin: nil
-    source: https://github.com/smaeul/sun20i_d1_spl.git
-    source-type: git
-    source-branch: mainline
-    source-depth: 1
-    override-build: |
-      make \
-        CROSS_COMPILE=riscv64-linux-gnu- \
-        p=sun20iw1p1 \
-        mmc
-
-      cp -f ${SNAPCRAFT_PART_BUILD}/nboot/boot0_sdcard_sun20iw1p1.bin \
-        ${SNAPCRAFT_PART_INSTALL}/
-
-  opensbi:
-    plugin: make
-    source: https://github.com/smaeul/opensbi.git
-    source-type: git
-    source-branch: d1-wip
-    source-depth: 1
-    override-build: |
-      CROSS_COMPILE=riscv64-linux-gnu- \
-        PLATFORM=generic \
-        FW_OPTIONS=0x2 \
-        FW_PIC=y \
-        make
-
   u-boot:
-    after:
-      - opensbi
     plugin: make
-    source: https://github.com/smaeul/u-boot.git
-    source-type: git
-    source-branch: d1-wip
+    source: https://gitlab.com/u-boot/u-boot
     source-depth: 1
+    source-type: git
+    source-commit: 59c51fa4abbca41d2a4d60c0fe4d8f05fc83fb46
+    build-packages:
+      - bison
+      - build-essential
+      - flex
+      - libssl-dev
+      - on amd64:
+        - binutils-riscv64-linux-gnu
+        - gcc-riscv64-linux-gnu
+      - else:
+        - gcc
+    override-pull: |
+      craftctl default
+
+      for patch in ${CRAFT_PROJECT_DIR}/patches/000*.patch; do
+        patch -p1 < "$patch"
+      done
     override-build: |
-      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- lichee_rv_defconfig
+      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- microchip_mpfs_icicle_defconfig
+      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
 
-      sed -i 's/CONFIG_DEFAULT_DEVICE_TREE="sun20i-d1-lichee-rv"/CONFIG_DEFAULT_DEVICE_TREE="sun20i-d1-lichee-rv-dock"/' ${SNAPCRAFT_PART_BUILD}/.config
-      sed -i 's/# CONFIG_OF_LIBFDT_OVERLAY is not set/CONFIG_OF_LIBFDT_OVERLAY=y/' ${SNAPCRAFT_PART_BUILD}/.config
-
-
-      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- all
-
-      cp -f arch/riscv/dts/sun20i-d1-lichee-rv-dock.dtb .
-      cp -f ${SNAPCRAFT_PART_SRC}/../../opensbi/build/build/platform/generic/firmware/fw_dynamic.bin .
+      install -Dm755 u-boot-dtb.bin \
+        ${CRAFT_PART_INSTALL}/u-boot-dtb.bin
 
       tools/mkenvimage \
         -r -s 4096 \
-        -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+        -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
 
-      tools/mkimage \
-        -T sunxi_toc1 \
-        -d ${SNAPCRAFT_PROJECT_DIR}/u-boot/toc1.cfg \
-        ${SNAPCRAFT_PART_INSTALL}/u-boot.toc1
-
-      touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
+      touch ${CRAFT_PART_INSTALL}/uboot.conf
     prime:
-      - u-boot.toc1
       - boot.sel
       - uboot.conf
-    build-packages:
-      - libpython3-dev
-      - libssl-dev
-      - python3-distutils
-      - swig
 
-build-packages:
-  - build-essential
-  - on amd64:
-    - gcc-riscv64-linux-gnu
-  - else:
-    - gcc
+  hss:
+    after: [u-boot]
+    plugin: make
+    source: https://github.com/polarfire-soc/hart-software-services
+    source-depth: 1
+    source-type: git
+    source-commit: 93c06e7951b2461e62c381470e9fcc44a6856875
+    build-packages:
+      - bison
+      - build-essential
+      - flex
+      - libelf-dev
+      - libssl-dev
+      - libyaml-dev
+      - python3
+      - zlib1g-dev
+      - on amd64:
+        - binutils-riscv64-linux-gnu
+        - gcc-riscv64-linux-gnu
+      - else:
+        - gcc
+    override-pull: |
+        craftctl default
+
+        patch -p1 < ${CRAFT_PROJECT_DIR}/patches/hss-0001-icicle-use-mainline-seg-register-values.patch
+    override-build: |
+      CONSOLE_TOOLS=$(find ${CRAFT_PROJECT_DIR} -name "SoftConsole-*" -type d)
+      [ -d "${CONSOLE_TOOLS}" ] || \
+        echo "Please install the toolchain available from SoftConsole" \
+        echo "Toolchains are available at:" \
+        echo "https://www.microchip.com/en-us/products/fpgas-and-plds/fpga-and-soc-design-tools/soc-fpga/softconsole#downloads" \
+        exit 1
+      export PATH=${CONSOLE_TOOLS}/riscv-unknown-elf-gcc/bin:$PATH
+
+      cp -f boards/mpfs-icicle-kit-es/def_config .config
+
+      make CROSS_COMPILE=riscv64-unknown-elf- BOARD=mpfs-icicle-kit-es
+
+      make -C tools/hss-payload-generator
+      install -Dm755 tools/hss-payload-generator/hss-payload-generator \
+        ${CRAFT_PART_INSTALL}/hss-payload-generator
+    prime:
+      - -hss-payload-generator
+
+  hss-payload:
+    after: [u-boot, hss]
+    plugin: dump
+    source: sources/
+    override-stage: |
+      craftctl default
+
+      ./hss-payload-generator \
+        -c hss.yaml \
+        payload.bin
+    prime:
+      - payload.bin
+
+slots:
+  icicle-gpio-0:
+    interface: gpio
+    number: 0
+  icicle-gpio-1:
+    interface: gpio
+    number: 1
+  icicle-gpio-2:
+    interface: gpio
+    number: 2
+  icicle-gpio-3:
+    interface: gpio
+    number: 3
+  icicle-gpio-4:
+    interface: gpio
+    number: 4
+  icicle-gpio-5:
+    interface: gpio
+    number: 5
+  icicle-gpio-6:
+    interface: gpio
+    number: 6
+  icicle-gpio-7:
+    interface: gpio
+    number: 7
+  icicle-gpio-8:
+    interface: gpio
+    number: 8
+  icicle-gpio-9:
+    interface: gpio
+    number: 9
+  icicle-gpio-10:
+    interface: gpio
+    number: 10
+  icicle-gpio-11:
+    interface: gpio
+    number: 11
+  icicle-gpio-12:
+    interface: gpio
+    number: 12
+  icicle-gpio-13:
+    interface: gpio
+    number: 13
+  icicle-gpio-14:
+    interface: gpio
+    number: 14
+  icicle-gpio-15:
+    interface: gpio
+    number: 15
+  icicle-gpio-16:
+    interface: gpio
+    number: 16
+  icicle-gpio-17:
+    interface: gpio
+    number: 17
+  icicle-gpio-18:
+    interface: gpio
+    number: 18
+  icicle-gpio-19:
+    interface: gpio
+    number: 19
+  icicle-gpio-20:
+    interface: gpio
+    number: 20
+  icicle-gpio-21:
+    interface: gpio
+    number: 21
+  icicle-gpio-22:
+    interface: gpio
+    number: 22
+  icicle-gpio-23:
+    interface: gpio
+    number: 23
+  icicle-gpio-24:
+    interface: gpio
+    number: 24
+  icicle-gpio-25:
+    interface: gpio
+    number: 25
+  icicle-gpio-26:
+    interface: gpio
+    number: 26
+  icicle-gpio-27:
+    interface: gpio
+    number: 27
+  i2c-0:
+    interface: i2c
+    path: /dev/i2c-0
+  i2c-1:
+    interface: i2c
+    path: /dev/i2c-1
+  i2c-2:
+    interface: i2c
+    path: /dev/i2c-2
+  bt-serial:
+    interface: serial-port
+    path: /dev/ttyAMA0
+  serial0:
+    interface: serial-port
+    path: /dev/ttyS0
+  serial1:
+    interface: serial-port
+    path: /dev/ttyS1
+  serial2:
+    interface: serial-port
+    path: /dev/ttyS2
+  serial3:
+    interface: serial-port
+    path: /dev/ttyS3
+  pwm0:
+    interface: pwm
+    chip-number: 0
+    channel: 0
+  pwm1:
+    interface: pwm
+    chip-number: 0
+    channel: 1
+  pwm2:
+    interface: pwm
+    chip-number: 0
+    channel: 2
+  pwm3:
+    interface: pwm
+    chip-number: 0
+    channel: 3
+  pwm4:
+    interface: pwm
+    chip-number: 0
+    channel: 4
+  pwm5:
+    interface: pwm
+    chip-number: 0
+    channel: 5
+  pwm6:
+    interface: pwm
+    chip-number: 0
+    channel: 6
+  pwm7:
+    interface: pwm
+    chip-number: 0
+    channel: 7
+  pwm8:
+    interface: pwm
+    chip-number: 0
+    channel: 8
+  pwm9:
+    interface: pwm
+    chip-number: 0
+    channel: 9
+  pwm10:
+    interface: pwm
+    chip-number: 0
+    channel: 10
+  pwm11:
+    interface: pwm
+    chip-number: 0
+    channel: 11
+  pwm12:
+    interface: pwm
+    chip-number: 0
+    channel: 12
+  pwm13:
+    interface: pwm
+    chip-number: 0
+    channel: 13
+  pwm14:
+    interface: pwm
+    chip-number: 0
+    channel: 14
+  pwm15:
+    interface: pwm
+    chip-number: 0
+    channel: 15
