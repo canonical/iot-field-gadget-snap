@@ -4,12 +4,9 @@ setenv devnum   0
 setenv seedpart 1
 setenv bootpart 3
 
-# Kernel, initrd, & fdt filename
-setenv fdt_name     dtbs/mpfs-icicle-kit.dtb
+# FIT Image & configuration
 setenv kernel_name  kernel.img
-setenv ramdisk_name initrd.img
-# TODO: use a FIT Image
-#setenv fit_config   mpfs-icicle-kit.dtb
+setenv fit_config   mpfs-icicle-kit.dtb
 
 echo "Loading ubuntu-seed configuration..."
 load ${devtype} ${devnum}:${seedpart} ${scriptaddr} uboot/ubuntu/boot.sel
@@ -39,21 +36,7 @@ fi
 setenv board_spec "earlycon=sbi uio_pdrv_genirq.of_id=generic-uio"
 setenv bootargs   "${board_spec} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
 
-# TODO: Use a FIT Image
-echo "Loading device tree from ${devtype} ${devnum}:${kernel_bootpart} to address ${fdt_addr_r}"
-load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
+echo "Loading kernel from ${devtype} ${devnum}:${kernel_bootpart} to address ${ramdisk_addr_r}"
+load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${kernel_name}"
 
-echo "Loading initrd from ${devtype} ${devnum}:${kernel_bootpart} to address ${ramdisk_addr_r}"
-load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
-setenv ramdisk_size "${filesize}"
-
-echo "Loading kernel from ${devtype} ${devnum}:${kernel_bootpart} to address ${kernel_addr_r}"
-load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
-
-echo "Booting kernel with bootargs as ${bootargs}"
-booti ${kernel_addr_r} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
-
-#echo "Loading kernel from ${devtype} ${devnum}:${kernel_bootpart} to address ${ramdisk_addr_r}"
-#load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${kernel_name}"
-#
-#bootm ${ramdisk_addr_r}
+bootm ${ramdisk_addr_r}#${fit_config}
