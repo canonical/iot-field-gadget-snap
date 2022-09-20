@@ -1,89 +1,92 @@
 name: virt
-version: 20-1
+version: 22-1
 summary: RISCV virt board gadget
 description: |
   Support files for booting Qemu's RISCV virt board.
 type: gadget
-base: core20
+base: core22
 assumes: [kernel-assets]
 architectures:
-  - build-on: [amd64, riscv64]
-    run-on:   [riscv64]
-
-package-repositories:
-  - type: apt
-    ppa: snappy-dev/image
+  - build-on:  [amd64, riscv64]
+    build-for: [riscv64]
 
 confinement: strict
 grade: stable
 
 parts:
-  u-boot-smode:
-    plugin: make
-    source: https://github.com/u-boot/u-boot.git
-    source-type: git
-    source-branch: v2022.01
-    source-depth: 1
-    override-build: |
-      ARCH=riscv make qemu-riscv64_smode_defconfig
-
-      ## Relevant config options for Qemu
-      # CONFIG_ENV_IS_NOWHERE is not set
-      # CONFIG_ENV_IS_IN_FAT=y
-      # CONFIG_ENV_FAT_INTERFACE="virtio"
-      # CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"
-      # CONFIG_ENV_FAT_FILE="boot.scr"
-
-      ## Just carry over our config for now:
-      cp -f ${SNAPCRAFT_PROJECT_DIR}/u-boot/config ${SNAPCRAFT_PART_BUILD}/.config
-
-      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
-
-      cp -f ${SNAPCRAFT_PART_BUILD}/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
-      tools/mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
-      touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
-    build-packages:
-      - bc
-      - bison
-      - flex
-      - libpython3-dev
-      - libssl-dev
-    prime:
-      - boot.sel
-      - uboot.conf
-      - u-boot.bin
-
   boot-scr:
     plugin: nil
-    source: .
+    source: sources/
+    build-packages:
+      - sed
+      - u-boot-tools
     override-build: |
       mkimage \
         -T script \
         -A riscv \
         -C none \
         -n 'Boot Script' \
-        -d ${SNAPCRAFT_PROJECT_DIR}/u-boot/boot.scr.in \
-        ${SNAPCRAFT_PART_INSTALL}/boot.scr
+        -d ${CRAFT_PROJECT_DIR}/sources/boot.scr.in \
+        ${CRAFT_PART_INSTALL}/boot.scr
+
+  u-boot-smode:
+    plugin: make
+    source: https://github.com/u-boot/u-boot
+    source-type: git
+    source-branch: v2022.07
+    source-depth: 1
     build-packages:
-      - sed
-      - u-boot-tools
+      - bc
+      - bison
+      - build-essential
+      - flex
+      - libpython3-dev
+      - libssl-dev
+      - on amd64:
+        - gcc-riscv64-linux-gnu
+      - else:
+        - gcc
+    override-build: |
+      ARCH=riscv make qemu-riscv64_smode_defconfig
+
+      # Relevant config options for Qemu
+      echo 'CONFIG_ENV_IS_IN_FAT=y'               >> .config
+      echo 'CONFIG_ENV_FAT_FILE="boot.scr"'       >> .config
+      echo 'CONFIG_ENV_FAT_INTERFACE="virtio"'    >> .config
+      echo '# CONFIG_ENV_IS_NOWHERE is not set'   >> .config
+      echo 'CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"' >> .config
+
+      ARCH=riscv make oldconfig
+
+      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
+
+      cp -f ${CRAFT_PART_BUILD}/u-boot.bin ${CRAFT_PART_INSTALL}/
+
+      tools/mkenvimage \
+        -r -s 4096 \
+        -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
+
+      touch ${CRAFT_PART_INSTALL}/uboot.conf
+    prime:
+      - boot.sel
+      - uboot.conf
+      - u-boot.bin
 
   opensbi:
-    after: 
-      - u-boot-smode
+    after: [u-boot-smode]
     plugin: make
     source: https://github.com/riscv-software-src/opensbi
     source-type: git
+    source-commit: 7f09fba86e439808e0b40bdf536937c42e1ea2c9
     source-depth: 1
+    build-packages:
+      - build-essential
+      - on amd64:
+        - gcc-riscv64-linux-gnu
+      - else:
+        - gcc
     override-build: |
-      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${SNAPCRAFT_PART_BUILD}/../../u-boot-smode/install/u-boot.bin
+      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${CRAFT_PART_BUILD}/../../u-boot-smode/install/u-boot.bin
 
-      cp -f ${SNAPCRAFT_PART_BUILD}/build/platform/generic/firmware/fw_payload.elf \
-        ${SNAPCRAFT_PART_INSTALL}/
-
-build-packages:
-  - build-essential
-  - on amd64:
-    - gcc-riscv64-linux-gnu
-  - else:
-    - gcc
+      cp -f ${CRAFT_PART_BUILD}/build/platform/generic/firmware/fw_payload.elf \
+        ${CRAFT_PART_INSTALL}/
