@@ -12,7 +12,7 @@ Much like the kernel, u-boot is very device specific. Modify
 
 Building:
 
-`snapcraft --destructive-mode --target-arch=riscv64 --enable-experimental-target-arch`
+`snapcraft`
 
 
 ## Academic Information
