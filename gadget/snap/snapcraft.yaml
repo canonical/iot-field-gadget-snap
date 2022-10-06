@@ -14,6 +14,11 @@ confinement: strict
 grade: stable
 
 parts:
+  cloud-init-conf:
+    plugin: nil 
+    override-build: |
+      cp -a ../../../cloud.conf -r $SNAPCRAFT_PART_INSTALL/
+
   boot-scr:
     plugin: nil
     source: sources/
