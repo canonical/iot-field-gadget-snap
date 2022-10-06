@@ -11,6 +11,8 @@ volumes:
         content:
           - source: boot.scr
             target: /
+          - source: cloud.conf
+            target: /
       - name: hss
         type: 21686148-6449-6E6F-744E-656564454649
         size: 4M
@@ -26,6 +28,8 @@ volumes:
             target: uboot/ubuntu/boot.sel
           - source: boot.scr
             target: /
+          - source: cloud.conf
+            target: /
       - name: ubuntu-save
         role: system-save
         filesystem: ext4
@@ -38,3 +42,6 @@ volumes:
         size: 1M
 
 device-tree-origin: kernel
+defaults:
+  system:
+    service.console-conf.disable: true
