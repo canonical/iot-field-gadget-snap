@@ -72,7 +72,7 @@ parts:
     source: https://github.com/polarfire-soc/hart-software-services
     source-depth: 1
     source-type: git
-    source-commit: 93c06e7951b2461e62c381470e9fcc44a6856875
+    source-tag: v2022.09
     build-packages:
       - bison
       - build-essential
@@ -87,25 +87,9 @@ parts:
         - gcc-riscv64-linux-gnu
       - else:
         - gcc
-    override-pull: |
-        craftctl default
-
-        patch -p1 < ${CRAFT_PROJECT_DIR}/patches/hss-0001-icicle-use-mainline-seg-register-values.patch
     override-build: |
-      CONSOLE_TOOLS=$(find ${CRAFT_PROJECT_DIR} -name "SoftConsole-*" -type d)
-      if [ ! -d ${CONSOLE_TOOLS} ]; then
-        echo "Please install the toolchain available from SoftConsole"
-        echo "Toolchains are available at:"
-        echo "https://www.microchip.com/en-us/products/fpgas-and-plds/fpga-and-soc-design-tools/soc-fpga/softconsole#downloads" 
-        exit 1
-      fi
-      export PATH=${CONSOLE_TOOLS}/riscv-unknown-elf-gcc/bin:$PATH
-
-      cp -f boards/mpfs-icicle-kit-es/def_config .config
-
-      make CROSS_COMPILE=riscv64-unknown-elf- BOARD=mpfs-icicle-kit-es
-
       make -C tools/hss-payload-generator
+
       install -Dm755 tools/hss-payload-generator/hss-payload-generator \
         ${CRAFT_PART_INSTALL}/hss-payload-generator
     prime:
@@ -121,8 +105,8 @@ parts:
       ./hss-payload-generator \
         -c hss.yaml \
         payload.bin
-    prime:
-      - payload.bin
+
+        install -Dm755 payload.bin ${CRAFT_PART_INSTALL}/payload.bin
 
 slots:
   icicle-gpio-0:
