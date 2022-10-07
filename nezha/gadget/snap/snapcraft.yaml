@@ -56,7 +56,7 @@ parts:
       echo '# CONFIG_ENV_IS_NOWHERE is not set'   >> .config
       echo 'CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"' >> .config
 
-      ARCH=riscv make oldconfig
+      echo "yes" "" | ARCH=riscv make oldconfig
 
       ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
 
