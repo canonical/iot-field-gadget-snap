@@ -68,9 +68,7 @@ parts:
 
       touch ${CRAFT_PART_INSTALL}/uboot.conf
     prime:
-      - boot.sel
-      - uboot.conf
-      - u-boot.bin
+      - -u-boot.bin
 
   opensbi:
     after: [u-boot-smode]
@@ -86,7 +84,6 @@ parts:
       - else:
         - gcc
     override-build: |
-      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${CRAFT_PART_BUILD}/../../u-boot-smode/install/u-boot.bin
+      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${CRAFT_STAGE}/u-boot.bin
 
-      cp -f ${CRAFT_PART_BUILD}/build/platform/generic/firmware/fw_payload.elf \
-        ${CRAFT_PART_INSTALL}/
+      cp -f build/platform/generic/firmware/fw_payload.bin ${CRAFT_PART_INSTALL}/
