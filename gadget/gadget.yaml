@@ -7,7 +7,7 @@ volumes:
         role: system-seed
         filesystem: vfat
         type: 0C
-        size: 1500M
+        size: 900M
         content:
           - source: fw_payload.bin
             target: /
@@ -17,7 +17,7 @@ volumes:
         role: system-boot
         filesystem: ext4
         type: 0C
-        size: 1500M
+        size: 900M
         content:
           - source: boot.sel
             target: uboot/ubuntu/boot.sel
@@ -30,4 +30,4 @@ volumes:
         role: system-data
         filesystem: ext4
         type: 83,0FC63DAF-8483-4772-8E79-3D69D8477DE4
-        size: 1500M
+        size: 1000M
