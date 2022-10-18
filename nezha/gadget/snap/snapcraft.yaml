@@ -48,16 +48,6 @@ parts:
         - gcc
     override-build: |
       ARCH=riscv make qemu-riscv64_smode_defconfig
-
-      # Relevant config options for Qemu
-      echo 'CONFIG_ENV_IS_IN_FAT=y'               >> .config
-      echo 'CONFIG_ENV_FAT_FILE="boot.scr"'       >> .config
-      echo 'CONFIG_ENV_FAT_INTERFACE="virtio"'    >> .config
-      echo '# CONFIG_ENV_IS_NOWHERE is not set'   >> .config
-      echo 'CONFIG_ENV_FAT_DEVICE_AND_PART="0:1"' >> .config
-
-      echo "yes" "" | ARCH=riscv make oldconfig
-
       ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
 
       cp -f ${CRAFT_PART_BUILD}/u-boot.bin ${CRAFT_PART_INSTALL}/
