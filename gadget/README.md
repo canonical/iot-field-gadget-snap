@@ -7,6 +7,11 @@ In this case, we are building u-boot to be carried as a payload for OpenSBI.
 From there, we hope to exec the system, whether it be to bootstrap Ubuntu Core
 or run as normal.
 
+Note that on Ubuntu systems, the `qemu-run` script provided by this repository
+utilizes the `u-boot` and `opensbi` files provided as deb packages, and so the
+artifacts built here go unused. On non-Ubuntu systems however, you will want to
+use `prime/fw_payload.bin` as the `bios` passed to Qemu.
+
 Much like the kernel, u-boot is very device specific. Modify
 `snap/snapcraft.yaml` as necessary for your device.
 
