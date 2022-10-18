@@ -74,6 +74,10 @@ parts:
       - else:
         - gcc
     override-build: |
-      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make PLATFORM=generic FW_PAYLOAD_PATH=${CRAFT_STAGE}/u-boot.bin
+      ARCH=riscv \
+        CROSS_COMPILE=riscv64-linux-gnu- \
+        PLATFORM=generic \
+        FW_PAYLOAD_PATH=${CRAFT_STAGE}/u-boot.bin \
+        make
 
       cp -f build/platform/generic/firmware/fw_payload.bin ${CRAFT_PART_INSTALL}/
