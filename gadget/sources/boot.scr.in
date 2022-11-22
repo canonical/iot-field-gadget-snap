@@ -33,7 +33,7 @@ else
     setenv kernel_bootpart "${seedpart}"
 fi
 
-setenv board_spec "earlycon=sbi uio_pdrv_genirq.of_id=generic-uio"
+setenv board_spec "earlycon=sbi uio_pdrv_genirq.of_id=generic-uio nvme_core.default_ps_max_latency_us=2000"
 setenv bootargs   "${board_spec} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
 
 echo "Loading kernel from ${devtype} ${devnum}:${kernel_bootpart} to address ${ramdisk_addr_r}"
