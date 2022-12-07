@@ -15,7 +15,7 @@ grade: stable
 
 parts:
   cloud-init-conf:
-    plugin: nil 
+    plugin: nil
     override-build: |
       cp -a ../../../cloud.conf -r $SNAPCRAFT_PART_INSTALL/
 
@@ -35,10 +35,10 @@ parts:
 
   u-boot:
     plugin: make
-    source: https://gitlab.com/u-boot/u-boot
+    source: https://github.com/polarfire-soc/u-boot
     source-depth: 1
     source-type: git
-    source-commit: 59c51fa4abbca41d2a4d60c0fe4d8f05fc83fb46
+    source-branch: mpfs-uboot-2022.01
     build-packages:
       - bison
       - build-essential
@@ -49,12 +49,6 @@ parts:
         - gcc-riscv64-linux-gnu
       - else:
         - gcc
-    override-pull: |
-      craftctl default
-
-      for patch in ${CRAFT_PROJECT_DIR}/patches/000*.patch; do
-        patch -p1 < "$patch"
-      done
     override-build: |
       make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- microchip_mpfs_icicle_defconfig
       make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
