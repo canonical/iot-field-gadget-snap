@@ -14,14 +14,13 @@ confinement: strict
 grade: stable
 
 parts:
-  cloud-init-conf:
-    plugin: nil
-    override-build: |
-      cp -a ../../../cloud.conf -r $SNAPCRAFT_PART_INSTALL/
+  cloud-conf:
+    plugin: dump
+    source: cloud-conf/
 
   boot-scr:
     plugin: nil
-    source: sources/
+    source: boot-scr/
     override-build: |
       mkimage \
         -C none \
@@ -97,7 +96,7 @@ parts:
   hss-payload:
     after: [u-boot, hss]
     plugin: dump
-    source: sources/
+    source: hss/
     override-stage: |
       craftctl default
 
