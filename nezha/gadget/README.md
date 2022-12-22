@@ -27,15 +27,15 @@ Interface for RISC-V (for more information, see [their project](https://github.c
 
 1) `fw_jump.elf`
 
-    |-> Jumps to a specific location in memory and executes the object there
+    Jumps to a specific location in memory and executes the object there
 
 2) `fw_payload.elf`
 
-    |-> Executes a binary built into OpenSBI as a pyaload
+    Executes a binary built into OpenSBI as a payload
 
 3) `fw_dynamic.elf`
 
-    |-> Determines how to proceed to the next bootloader at run-time
+    Determines how to proceed to the next bootloader at run-time
 
 `fw_dynamic.elf` is used in cases where `u-boot.bin` is built in m-mode
 (`qemu-riscv64_spl_defconfig`). This is not our case here, so we will ignore it.
@@ -99,14 +99,14 @@ Some important things to know:
     itself. The best way is to add support yourself. The easiest way is to
     get someone else to do it for you.
 
-3) Given that you have to modify some files, what may they be? 
+3) Given that you have to modify some files, what may they be?
     * It's unlikely that you'll have to modify the `gadget.yaml` too much
-    
+
     * You'll have to use a different config than the one provided by
       `u-boot/config`. Building u-boot is similar to building the kernel;
-      get the sources, do `make foo_defconfig` for your hardware, 
+      get the sources, do `make foo_defconfig` for your hardware,
       `make menuconfig` to tweak.
-    
+
     * You'll have to tweak the addresses defined in `u-boot/boot.scr.in` -
       these are very much specific to your board, as the amount of RAM
       varies per device and what address `u-boot` reserves for itself can be
