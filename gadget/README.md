@@ -1,16 +1,22 @@
-The gadget snap defines the structure & boot mechanisms of our device, amongst
-many other things. As such, this snap is also quite device specific.
+The Polarfire Icicle Kit boots the HSS on the eNVM. That HSS then executes some
+payload binary and the system runs from there, with the HSS initially booted
+running in the background.
 
-In this case, we are packaging an entire boot stack; from the zero stage
-bootloader all the way up to our final bootloader (u-boot), which will land us
-into a UC22 userspace.
+As a result, we don't actually need to build our own HSS in the gadget. We
+simply need to create the payload file for HSS to execute. In this case, that
+would be u-boot.
 
-We are using `base: core22` for this gadget snap. The grammar of our
-`snapcraft.yaml` has changed in important ways as a result.
+A different HSS can be flashed to the board using the Libero software suite
+provided by Microchip. A free license can be obtained for at least
+non-commercial uses.
+
+I don't know how to use their tooling to create the proper files to flash a
+custom-built HSS to this hardware. If you happen to know, feel free to drop me a
+line. I have simply gone ahead and used the one available from their [releases](https://github.com/polarfire-soc/icicle-kit-reference-design/releases)
 
 Building:
 
-`snapcraft --destructive-mode`
+`snapcraft`
 
 
 ## Academic Information
@@ -31,36 +37,16 @@ Per [The "official" docs](https://u-boot.readthedocs.io/en/latest/board/microchi
 The current setup for our bootloader is that the HSS firmware is built with the
 `u-boot-dtb.bin` as a payload, leveraging the bundled OpenSBI binary HSS builds.
 
-We use some patches lifted directly from [Microchip's Yocto BSP](https://github.com/polarfire-soc/meta-polarfire-soc-yocto-bsp).
-
 With this in mind, we will use Microchip's boot-flow:
 
 `HSS + OpenSBI (M-Mode) -> U-Boot (S-Mode) -> Linux (S-Mode)`
 
-What this essentially means is that we will build u-boot and HSS (with its own
-bundled dependencies). From there, we will use the `hss-payload-generator` to
-parse a [YAML file](sources/hss.yaml) which defines what payload(s) are
-delivered by the HSS firmware during boot, and where they are loaded from.
+What this essentially means is that we will build u-boot, and from there, we
+will use the `hss-payload-generator` to parse a [YAML file](hss/hss.yaml)
+which defines what payload(s) are delivered by the HSS firmware during boot, and
+where they are loaded from.
 
 There is an important thing to note about this bootflow!
-
-Because we are using the OpenSBI bundled with HSS, we incur some... "penalties".
-The largest such problem is that there is no way to reboot the board from
-outside of the supervisor console (`/dev/ttyUSB0`, the HSS supervisor console).
-
-This bug is *bad* for us. Following the Ubuntu Core bootstrapping process, the
-board must reboot. This step requires manual intervention, but this is "in
-general" a fine compromise.
-
-The more challenging aspect of this problem is that *any time* a reboot is
-required (notably, for gadget or kernel snap changes), the system will be
-trapped in a forever-boot-loop, because it will *never* cleanly shutdown. This
-means that our board cannot be updated when reboot-required updates take place.
-
-Luckily, this is set to be fixed in the [September HSS release](https://github.com/orgs/polarfire-soc/discussions/101), hopefully coming soon.
-
-Finally, there is another issue. This problem is with respect to actually
-building HSS. 
 
 HSS is launched from the eNVM on the board during boot. HSS has gotten very
 large since 2020. So big, in fact, that special care has to be taken when
@@ -79,7 +65,7 @@ recent Ubuntu systems (I haven't tested any systems earlier than 20.04, YMMV).
 
 [Sauce](https://github.com/polarfire-soc/hart-software-services/issues/30)
 
-As a result, we should build with the SoftConsole toolchain.  I think it is bad
+As a result, we should build with the SoftConsole toolchain. I think it is bad
 praxis to bundle toolchains, so I will not be bundling this (not to mention the
 EULA one must accept in order to use it -- I have no intention of gathering
 legal flak for this). However, you can download it from [here](https://www.microchip.com/en-us/products/fpgas-and-plds/fpga-and-soc-design-tools/soc-fpga/softconsole#downloads).
@@ -119,13 +105,13 @@ Some important things to know:
     itself. The best way is to add support yourself. The easiest way is to
     get someone else to do it for you.
 
-3) Given that you have to modify some files, what may they be? 
+3) Given that you have to modify some files, what may they be?
     * You'll likely have to make minimal changes to `gadget.yaml`
-    
+
     * You'll have to use a different config for u-boot. Building u-boot is
       similar to building the kernel; get the sources, do `make foo_defconfig`
       for your hardware, `make menuconfig` to tweak.
-    
+
     * You'll have to tweak the addresses defined in `u-boot/boot.scr.in` -
       these are very much specific to your board, as the amount of RAM
       varies per device and what address `u-boot` reserves for itself can be

@@ -6,6 +6,7 @@ description: |
 type: gadget
 base: core22
 assumes: [kernel-assets]
+
 architectures:
   - build-on:  [amd64, riscv64]
     build-for: [riscv64]
