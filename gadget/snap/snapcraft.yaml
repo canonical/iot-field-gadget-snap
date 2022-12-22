@@ -6,6 +6,7 @@ description: |
 type: gadget
 base: core22
 assumes: [kernel-assets]
+
 architectures:
   - build-on:  [amd64, riscv64]
     build-for: [riscv64]
@@ -15,8 +16,8 @@ grade: stable
 
 parts:
   boot-scr:
-    plugin: nil
-    source: sources/
+    plugin: dump
+    source: boot-scr/
     build-packages:
       - sed
       - u-boot-tools
@@ -26,7 +27,7 @@ parts:
         -A riscv \
         -C none \
         -n 'Boot Script' \
-        -d ${CRAFT_PROJECT_DIR}/sources/boot.scr.in \
+        -d boot.scr.in \
         ${CRAFT_PART_INSTALL}/boot.scr
 
   u-boot-smode:
@@ -50,7 +51,7 @@ parts:
       ARCH=riscv make qemu-riscv64_smode_defconfig
       ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
 
-      cp -f ${CRAFT_PART_BUILD}/u-boot.bin ${CRAFT_PART_INSTALL}/
+      cp -f u-boot.bin ${CRAFT_PART_INSTALL}/
 
       tools/mkenvimage \
         -r -s 4096 \
