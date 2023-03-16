@@ -1,0 +1,17 @@
+name: iot-field-amd64-gadget
+base: core22
+version: '0.1' 
+summary: Reference AMD64 gadget snap
+description: |
+  Base AMD64 gadget snap which currently just uses the standard pc gadget
+  as a base.
+
+grade: stable 
+confinement: strict 
+
+parts:
+  pc:
+    plugin: nil
+    stage-snaps:
+      - pc
+
