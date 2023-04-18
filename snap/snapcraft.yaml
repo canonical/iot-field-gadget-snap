@@ -6,19 +6,15 @@ description: |
 type: gadget
 base: core22
 assumes: [kernel-assets]
+adopt-info: u-boot
 
 architectures:
   - build-on:  [amd64, riscv64]
     build-for: [riscv64]
 
 confinement: strict
-grade: stable
 
 parts:
-  cloud-conf:
-    plugin: dump
-    source: cloud-conf/
-
   boot-scr:
     plugin: nil
     source: boot-scr/
@@ -33,79 +29,41 @@ parts:
     build-packages:
       - u-boot-tools
 
+  # Make an empty environment file so that Ubuntu Core can adjust the boot
+  # variables later
+  boot-sel:
+    plugin: nil
+    build-packages:
+      - u-boot-tools
+    override-build: |
+      mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+
+  # Required by Ubuntu Core
+  uboot-conf:
+    plugin: nil
+    override-build: |
+      touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
+
   u-boot:
-    plugin: make
-    source: https://github.com/polarfire-soc/u-boot
-    source-depth: 1
-    source-type: git
-    source-branch: mpfs-uboot-2022.01
-    build-packages:
-      - bison
-      - build-essential
-      - flex
-      - libssl-dev
-      - on amd64:
-        - binutils-riscv64-linux-gnu
-        - gcc-riscv64-linux-gnu
-      - else:
-        - gcc
+    plugin: nil
+    stage-packages:
+      - u-boot-microchip:${CRAFT_TARGET_ARCH}
     override-build: |
-      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- microchip_mpfs_icicle_defconfig
-      make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
-
-      install -Dm755 u-boot-dtb.bin \
-        ${CRAFT_PART_INSTALL}/u-boot-dtb.bin
-
-      tools/mkenvimage \
-        -r -s 4096 \
-        -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
-
-      touch ${CRAFT_PART_INSTALL}/uboot.conf
-    prime:
-      - boot.sel
-      - uboot.conf
-
-  hss:
-    after: [u-boot]
-    plugin: make
-    source: https://github.com/polarfire-soc/hart-software-services
-    source-depth: 1
-    source-type: git
-    source-tag: v2022.09
-    build-packages:
-      - bison
-      - build-essential
-      - flex
-      - libelf-dev
-      - libssl-dev
-      - libyaml-dev
-      - python3
-      - zlib1g-dev
-      - on amd64:
-        - binutils-riscv64-linux-gnu
-        - gcc-riscv64-linux-gnu
-      - else:
-        - gcc
-    override-build: |
-      make -C tools/hss-payload-generator
-
-      install -Dm755 tools/hss-payload-generator/hss-payload-generator \
-        ${CRAFT_PART_INSTALL}/hss-payload-generator
-    prime:
-      - -hss-payload-generator
-
-  hss-payload:
-    after: [u-boot, hss]
-    plugin: dump
-    source: hss/
-    override-stage: |
       craftctl default
 
-      ./hss-payload-generator \
-        -c hss.yaml \
-        payload.bin
+      UBOOT_VERSION="$(strings ${CRAFT_PART_INSTALL}/usr/lib/u-boot/microchip_mpfs_icicle/u-boot.bin | grep '^U-Boot ' | cut -f 2 -d\ )"
+      craftctl set version="${UBOOT_VERSION}"
+      craftctl set grade="stable"
+    organize:
+      usr/lib/u-boot/microchip_icicle/u-boot.payload: payload.bin
+    stage:
+      - payload.bin
 
-        install -Dm755 payload.bin ${CRAFT_PART_INSTALL}/payload.bin
+  # Provides uuidgen for use in prepare-device hooks
+  prepare-device:
+    plugin: nil
+    stage-packages:
+      - uuid-runtime
 
 slots:
   icicle-gpio-0:
