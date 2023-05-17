@@ -1,0 +1,66 @@
+name: Snap Builds CI
+
+# This workflow is intended to test that each gadget snap can be built with some
+# relevant version of snapcraft, with the aim of hopefully catching bugs or
+# regressions.
+
+# Run the jobs on:
+#   1) 12PM UTC weekly on Monday
+# Note that scheduled workflows must reside on the default branch. We can then
+# checkout each relevant branch to run the job on in our Checkout step.
+on:
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+# The following jobs are the actual jobs to be run
+# Convention:
+#   build_{directory}:
+#     name: Build job for {directory} snap
+#     runs-on: ubuntu-{target}
+#     outputs:
+#       snap-file: ${{ steps.build-snap.outputs.snap }}
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v3
+#       - name: Test build of {directory} snap
+#         uses: snapcore/action-build@v1
+#         with:
+#           path: {directory}/
+#           build-info: true
+#           snapcraft-channel: {track}/{risk}/{branch}
+#         id: build-snap
+jobs:
+  build_22_riscv64_icicle:
+    name: Build job for 22-riscv64-icicle gadget snap
+    runs-on: ubuntu-22.04
+    outputs:
+      snap-file: ${{ steps.build-snap.outputs.snap }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: 22-riscv64-icicle
+      - name: Test build of 22-riscv64-icicle gadget snap
+        uses: snapcore/action-build@v1
+        with:
+          build-info: true
+          snapcraft-channel: latest/edge
+        id: build-snap
+
+  build_22_riscv64_virt:
+    name: Build job for 22-riscv64-virt gadget snap
+    runs-on: ubuntu-22.04
+    outputs:
+      snap-file: ${{ steps.build-snap.outputs.snap }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: 22-riscv64-virt
+      - name: Test build of 22-riscv64-virt gadget snap
+        uses: snapcore/action-build@v1
+        with:
+          build-info: true
+          snapcraft-channel: latest/edge
+        id: build-snap
