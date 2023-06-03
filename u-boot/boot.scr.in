@@ -1,16 +1,17 @@
-## We can skip loading our device tree here because Qemu
-## automatically loads it into the machine for us.
+## Note that a lot of environment variables are already defined!
+## Specifically, kernel_addr_r, ramdisk_addr_r, & fdtcontroladdr
+## Our device tree is also already preloaded by u-boot.toc1
 
 # mmc/scsi etc & number
-setenv devtype virtio
-setenv devnum  0
-# The ubuntu-{boot,seed} partitions
+setenv devtype  mmc
+setenv devnum   0
+# The ubuntu-{seed,boot} partitions
 setenv seedpart 1
 setenv bootpart 2
 
-# Addresses to load the config, kernel to, names
-setenv kernel_addr_r 0xa0000000
-setenv kernel_name   kernel.img
+# Address to load the FIT Image to
+setenv kernel_name kernel.img
+setenv kernel_addr_r 0x50000000
 
 echo "Loading ubuntu-seed configuration..."
 load ${devtype} ${devnum}:${seedpart} ${scriptaddr} uboot/ubuntu/boot.sel
@@ -24,7 +25,7 @@ then
     load ${devtype} ${devnum}:${bootpart} ${scriptaddr} uboot/ubuntu/boot.sel
     env import ${scriptaddr}
     setenv kernel_bootpart "${bootpart}"
-    if test "${snapd_recovery_mode}" = "try"
+    if test "${kernel_status}" = "try"
     then
         echo "Trying to boot with ${snap_kernel}"
         setenv prefix "uboot/ubuntu/${snap_try_kernel}/"
@@ -33,15 +34,14 @@ then
         setenv prefix "uboot/ubuntu/${snap_kernel}/"
     fi
 else
-    # Prefix within the seed partiion to the boot files
+    # Prefix within the seed partition to the boot files
     setenv prefix "systems/${snapd_recovery_system}/kernel/"
-    setenv kernel_bootpart "${seedpart}"
+        setenv kernel_bootpart "${seedpart}"
 fi
+setenv console  "console=ttyS0,115200 earlycon"
+setenv bootargs "${bootargs} ${console} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
 
-setenv console  "earlycon=sbi console=ttyS0"
-setenv bootargs "${console} snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
+echo "Loading ${prefix}${kernel_name}..."
 
-echo "Loading FIT Image from ${devtype} ${devnum}:${kernel_bootpart} to address ${kernel_addr_r}"
 load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
-
 bootm ${kernel_addr_r}
