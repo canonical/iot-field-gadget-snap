@@ -1,84 +1,57 @@
-name: virt
+name: nezha
 version: 22-1
-summary: RISCV virt board gadget
+summary: Nezha board gadget
 description: |
-  Support files for booting Qemu's RISCV virt board.
-type: gadget
+  Support files for booting the Nezha board
 base: core22
+type: gadget
+
+confinement: strict
+grade: stable
+
 assumes: [kernel-assets]
 
 architectures:
   - build-on:  [amd64, riscv64]
     build-for: [riscv64]
 
-confinement: strict
-grade: stable
-
 parts:
   boot-scr:
-    plugin: dump
-    source: boot-scr/
+    plugin: nil
+    source: u-boot/
     build-packages:
-      - sed
       - u-boot-tools
     override-build: |
       mkimage \
         -T script \
-        -A riscv \
         -C none \
         -n 'Boot Script' \
         -d boot.scr.in \
         ${CRAFT_PART_INSTALL}/boot.scr
 
-  u-boot-smode:
-    plugin: make
-    source: https://github.com/u-boot/u-boot
-    source-type: git
-    source-branch: v2022.07
-    source-depth: 1
+  boot0:
+    plugin: nil
+    stage-packages:
+      - nezha-boot0
+    organize:
+      usr/lib/u-boot/nezha/boot0_sdcard_sun20iw1p1.bin: boot0_sdcard_sun20iw1p1.bin
+    stage:
+      - boot0_sdcard_sun20iw1p1.bin
+
+  u-boot:
+    plugin: nil
+    stage-packages:
+      - u-boot-nezha
+    organize:
+      usr/lib/u-boot/nezha/u-boot.toc1: u-boot.toc1
+    stage:
+      - u-boot.toc1
+
+  boot-sel:
+    plugin: nil
     build-packages:
-      - bc
-      - bison
-      - build-essential
-      - flex
-      - libpython3-dev
-      - libssl-dev
-      - on amd64:
-        - gcc-riscv64-linux-gnu
-      - else:
-        - gcc
+      - u-boot-tools
     override-build: |
-      ARCH=riscv make qemu-riscv64_smode_defconfig
-      ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- make
-
-      cp -f u-boot.bin ${CRAFT_PART_INSTALL}/
-
-      tools/mkenvimage \
-        -r -s 4096 \
-        -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
+      mkenvimage -r -s 4096 -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
 
       touch ${CRAFT_PART_INSTALL}/uboot.conf
-    prime:
-      - -u-boot.bin
-
-  opensbi:
-    after: [u-boot-smode]
-    plugin: make
-    source: https://github.com/riscv-software-src/opensbi
-    source-type: git
-    source-commit: 7f09fba86e439808e0b40bdf536937c42e1ea2c9
-    source-depth: 1
-    build-packages:
-      - build-essential
-      - on amd64:
-        - gcc-riscv64-linux-gnu
-      - else:
-        - gcc
-    override-build: |
-      ARCH=riscv \
-        CROSS_COMPILE=riscv64-linux-gnu- \
-        PLATFORM=generic \
-        FW_PAYLOAD_PATH=${CRAFT_STAGE}/u-boot.bin \
-        make
-
-      cp -f build/platform/generic/firmware/fw_payload.bin ${CRAFT_PART_INSTALL}/
