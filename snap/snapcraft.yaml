@@ -36,13 +36,13 @@ parts:
     build-packages:
       - u-boot-tools
     override-build: |
-      mkenvimage -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+      mkenvimage -r -s 4096 -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
 
   # Required by Ubuntu Core
   uboot-conf:
     plugin: nil
     override-build: |
-      touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
+      touch ${CRAFT_PART_INSTALL}/uboot.conf
 
   u-boot:
     plugin: nil
