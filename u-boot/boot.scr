@@ -1,52 +1,57 @@
-setenv devtype mmc
-setenv devnum 1
-setenv seedpart 1
-setenv bootpart 2
+# Device-specific config
+setenv devtype                  "mmc"
+setenv mmcdev                   "1"
+setenv mmc_seed_part            "1"
+setenv mmc_boot_part            "2"
+setenv console                  "earlycon"
+setenv kernel_addr_r            "0x20000000"
+setenv ramdisk_addr_r           "0x28000000"
+setenv fdt_addr_r               "0x10000000"
+setenv loadaddr                 "0x18000000"
+setenv kernel_filename          "kernel.img"
+setenv ramdisk_name             "initrd.img"
+setenv fdt_name                 "dtbs/meson-sm1-odroid-hc4.dtb"
 
-setenv kernel_name    "kernel.img"
-setenv ramdisk_name   "initrd.img"
-setenv fdt_name       "dtbs/meson-sm1-odroid-hc4.dtb"
+# Ubuntu Core config
+setenv kernel_bootpart          "${mmc_seed_part}"
+setenv core_state               "/uboot/ubuntu/boot.sel"
+setenv kernel_vars              "snap_kernel snap_try_kernel kernel_status"
+setenv recovery_vars            "snapd_recovery_mode snapd_recovery_system snapd_recovery_kernel"
+setenv snapd_recovery_mode      "install"
 
-setenv kernel_addr_r  "0x20000000"
-setenv ramdisk_addr_r "0x28000000"
-setenv fdt_addr_r     "0x10000000"
-setenv scriptaddr     "0x18000000"
+setenv bootargs "${console} ${bootargs}"
 
-echo "Loading ubuntu-seed configuration..."
-load ${devtype} ${devnum}:${seedpart} ${scriptaddr} uboot/ubuntu/boot.sel
-env import ${scriptaddr}
+load ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state}
+env import -t ${loadaddr} ${filesize} ${recovery_vars}
 
-echo "Snapd boot mode: ${snapd_recovery_mode}"
-
-if test "${snapd_recovery_mode}" = "run"
-then
-    echo "Loading ubuntu-boot configuration..."
-    load ${devtype} ${devnum}:${bootpart} ${scriptaddr} uboot/ubuntu/boot.sel
-    env import ${scriptaddr}
-    setenv kernel_bootpart "${bootpart}"
-    if test "${kernel_status}" = "try"
-    then
-        echo "Trying to boot with ${snap_kernel}"
-        setenv prefix "uboot/ubuntu/${snap_try_kernel}/"
-    else
-        echo "Using ${snap_kernel}"
-        setenv prefix "uboot/ubuntu/${snap_kernel}/"
-    fi
+if test "${snapd_recovery_mode}" = "run"; then
+    setenv bootargs "snapd_recovery_mode=${snapd_recovery_mode} ${bootargs}"
+    setenv kernel_bootpart ${mmc_boot_part}
+    load ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state}
+    env import -t ${loadaddr} ${filesize} ${kernel_vars}
+    setenv kernel_name ${snap_kernel}
+    if test -n "${kernel_status}"; then
+        if test "${kernel_status}" = "try"; then
+            if test -n "${snap_try_kernel}"; then
+                setenv kernel_status "trying"
+                setenv kernel_name "${snap_try_kernel}"
+            fi;
+        elif test "${kernel_status}" = "trying"; then
+            setenv kernel_status ""
+        fi;
+        env export -t ${loadaddr} ${kernel_vars}
+        save ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state} ${filesize}
+    fi;
+    setenv kernel_prefix "/uboot/ubuntu/${kernel_name}/"
 else
-    # Prefix within the seed partiion to the boot files
-    setenv prefix "systems/${snapd_recovery_system}/kernel/"
-    setenv kernel_bootpart "${seedpart}"
+    setenv bootargs "snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system} ${bootargs}"
+    setenv kernel_prefix "/systems/${snapd_recovery_system}/kernel/"
 fi
 
-setenv bootargs "earlycon rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system} ${bootargs}"
-
-echo "Loading ${prefix}${kernel_name}..."
-load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
-echo "Loading ${prefix}${ramdisk_name}..."
-load ${devtype} ${devnum}:${kernel_bootpart} ${ramdisk_addr_r} "${prefix}${ramdisk_name}"
+load ${devtype} ${mmcdev}:${kernel_bootpart} ${kernel_addr_r} "${kernel_prefix}${kernel_filename}"
+load ${devtype} ${mmcdev}:${kernel_bootpart} ${ramdisk_addr_r} "${kernel_prefix}${ramdisk_name}"
 setenv ramdisk_size $filesize
-echo "Loading ${prefix}${fdt_name}..."
-load ${devtype} ${devnum}:${kernel_bootpart} ${fdt_addr_r} "${prefix}${fdt_name}"
+load ${devtype} ${mmcdev}:${kernel_bootpart} ${fdt_addr_r} "${kernel_prefix}${fdt_name}"
 
 fdt addr ${fdt_addr_r}
 
