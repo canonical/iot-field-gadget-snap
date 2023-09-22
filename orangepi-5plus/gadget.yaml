@@ -14,7 +14,7 @@ volumes:
         content:
           - image: u-boot.bin
         update:
-          edition: 1
+          edition: 2
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
@@ -24,10 +24,10 @@ volumes:
           - source: boot.scr
             target: /
         update:
-          edition: 1
+          edition: 2
       - name: ubuntu-boot
         role: system-boot
-        filesystem: ext4
+        filesystem: vfat
         type: "83"
         size: 1500M
         content:
