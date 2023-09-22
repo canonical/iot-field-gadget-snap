@@ -8,21 +8,21 @@ summary: Gadget snap for the ODROID HC4 platform
 description: |
   Gadget snap for the ODROID HC4 platform
 type: gadget
-confinement: devmode
-grade: devel
+confinement: strict
+grade: stable
 version: v2015.01
 
 architectures:
   - build-on: amd64
-    run-on: [arm64]
+    build-for: [arm64]
 
 parts:
   # The Hardkernel U-Boot only supports <= GCC 4, which isn't available in 20.04
   toolchain-aarch64:
     source: https://releases.linaro.org/archive/14.11/components/toolchain/binaries/aarch64-none-elf/gcc-linaro-4.9-2014.11-x86_64_aarch64-elf.tar.xz
     plugin: dump
-    stage:
-      - -*
+    organize:
+      "*": toolchain-aarch64/
     prime:
       - -*
 
@@ -30,8 +30,8 @@ parts:
   toolchain-armhf:
     source: https://releases.linaro.org/archive/14.11/components/toolchain/binaries/arm-none-eabi/gcc-linaro-4.9-2014.11-x86_64_arm-eabi.tar.xz
     plugin: dump
-    stage:
-      - -*
+    organize:
+      "*": toolchain-armhf/
     prime:
       - -*
 
@@ -42,14 +42,14 @@ parts:
       - toolchain-aarch64
     plugin: nil
     build-environment:
-      - PATH: "${SNAPCRAFT_PROJECT_DIR}/parts/toolchain-aarch64/install/bin:${SNAPCRAFT_PROJECT_DIR}/parts/toolchain-armhf/install/bin:${PATH}"
+      - PATH: "${CRAFT_STAGE}/toolchain-aarch64/bin:${CRAFT_STAGE}/toolchain-armhf/bin:/usr/lib/ccache/:${PATH}"
     source: https://github.com/hardkernel/u-boot.git
     source-type: git
     source-branch: odroidg12-v2015.01
     override-build: |
       make odroidc4_defconfig
       make -j$(nproc)
-      cp sd_fuse/u-boot.bin ${SNAPCRAFT_PART_INSTALL}/
+      cp sd_fuse/u-boot.bin ${CRAFT_PART_INSTALL}/
     build-packages:
       - bc
       - make
@@ -60,29 +60,46 @@ parts:
       - u-boot
     plugin: nil
     source: u-boot
+    build-packages:
+      - u-boot-tools
     override-build: |
-      ../../u-boot/build/build/tools/mkimage \
-        -A arm64 -T script -C none -n 'Boot Script' -d boot.scr \
-        ${SNAPCRAFT_PART_INSTALL}/boot.scr
+      mkimage -A arm64 -T script -C none -n 'Boot Script' -d boot.scr \
+        ${CRAFT_PART_INSTALL}/boot.scr
 
   # Make an empty environment file so that Ubuntu Core can edit it later
   boot-sel:
     after:
       - u-boot
     plugin: nil
+    build-packages:
+      - u-boot-tools
     override-build: |
-      ../../u-boot/build/build/tools/mkenvimage \
-        -r -s 4096 -o ${SNAPCRAFT_PART_INSTALL}/boot.sel - < /dev/null
+      mkenvimage -r -s 4096 -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
 
   # Required by Ubuntu Core
   uboot-conf:
     plugin: nil
     override-build: |
-      touch ${SNAPCRAFT_PART_INSTALL}/uboot.conf
+      touch ${CRAFT_PART_INSTALL}/uboot.conf
 
-slots:
-  dev-zfs:
-    interface: custom-device
-    custom-device: zfs
-    devices:
-      - /dev/zfs
+  hooks:
+    plugin: nil
+    source: hooks
+    stage-packages:
+      - uuid-runtime:${CRAFT_TARGET_ARCH}
+    override-build: |
+      if [[ -z ${MODEL_APIURL+x} || -z ${MODEL_APIKEY+x} ]]; then
+        echo "MODEL_APIKEY or MODEL_APIURL not set; not creating prepare-device hook"
+      else
+        sed -i "s;<<<MODEL_APIURL>>>;${MODEL_APIURL};" \
+          ${CRAFT_PART_BUILD}/prepare-device.inc
+        sed -i "s;<<<MODEL_APIKEY>>>;${MODEL_APIKEY};" \
+          ${CRAFT_PART_BUILD}/prepare-device.inc
+
+        install -Dm0755 ${CRAFT_PART_BUILD}/prepare-device.inc \
+          ${CRAFT_PART_INSTALL}/snap/hooks/prepare-device
+      fi
+    prime:
+      - -usr/share/doc
+      - -usr/share/man
+      - -usr/share/bash-completion
