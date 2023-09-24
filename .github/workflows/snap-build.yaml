@@ -64,3 +64,33 @@ jobs:
           build-info: true
           snapcraft-channel: latest/edge
         id: build-snap
+
+  build_22.04_amd64_pc:
+    name: Build job for the Classic gadget snap
+    runs-on: ubuntu-22.04
+    outputs:
+      snap-file: ${{ steps.build.outputs.snap }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: 22.04-amd64-pc
+      - name: Prep env
+        run: |
+          sed -i "s/APIKEY_STANDIN/${{ secrets.CLASSIC_MODEL_APIKEY }}/"      snap/snapcraft.yaml
+          sed -i "s/name: pc/name: ${{ secrets.REGISTERED_NAME}}/"            snap/snapcraft.yaml
+          sed -i "s/-partners.canonical.com/${{ secrets.SERIAL_VAULT_URL }}/" snap/hooks/prepare-device
+      - name: Build
+        uses: snapcore/action-build@v1
+        with:
+          build-info: true
+          snapcraft-channel: 7.x/stable
+          ua-token: ${{ secrets.UA_TOKEN }}
+        id: build
+      - name: Publish
+        uses: snapcore/action-publish@v1
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.IOTFIELD_STORE_CREDS }}
+        with:
+          snap: ${{ steps.build.outputs.snap }}
+          release: classic/edge
