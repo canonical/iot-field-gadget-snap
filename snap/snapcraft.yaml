@@ -1,0 +1,83 @@
+name: pc
+adopt-info: grub-prepare
+type: gadget
+base: core22
+summary: Classic PC gadget for generic AMD64 devices
+description: |
+    This gadget enables booting generic PC AMD64 with classic Ubuntu
+
+contact: dilyn.corner@canonical.com
+issues: https://github.com/canonical/iot-field-gadget-snap/issues
+license: GPL-2.0
+source-code: https://github.com/canonical/iot-field-gadget-snap/tree/22.04-amd64-pc
+website: https://dilyn.cc
+
+confinement: strict
+grade: stable
+
+architectures:
+  - build-on: [amd64]
+
+parts:
+  grub-prepare:
+    plugin: nil
+    stage-packages: [grub-efi-amd64-signed, grub-pc-bin, shim-signed]
+    override-build: |
+      # Set the version to the in-use version of the signed grub binary
+      craftctl set version="$(find ${CRAFT_PART_BUILD}/../stage_packages/ \
+                                   -name grub-efi-amd64-signed*.deb \
+                                   -exec dpkg-deb -f {} Version \;)"
+
+      cat > grub.cfg << EOF
+        search.fs_label writable root
+        set prefix=(\$root)'/boot/grub'
+        configfile \$prefix/grub.cfg
+      EOF
+
+      cp -f  grub.cfg "${CRAFT_PART_INSTALL}/grub.cfg"
+      ln -sf grub.cfg "${CRAFT_PART_INSTALL}/grub.conf"
+    override-prime: |
+      craftctl default
+
+      # ubuntu-image requires that gadget.yaml be in the root of the snap for Classic images
+      ln -sf meta/gadget.yaml gadget.yaml
+    prime:
+      - grub.cfg
+      - grub.conf
+
+  grub:
+    after: [grub-prepare]
+    plugin: nil
+    build-packages: [grub-common]
+    override-build: |
+      export GRUB_LEGACY_MODULES="all_video biosdisk boot cat chain configfile \
+        echo ext2 fat font gettext gfxmenu gfxterm gfxterm_background gzio     \
+        halt jpeg keystatus loadenv loopback linux memdisk minicmd normal      \
+        part_gpt png reboot search search_fs_uuid search_fs_file search_label  \
+        sleep squash4 test true btrfs hfsplus iso9660 part_apple part_msdos    \
+        password_pbkdf2 zfs zfscrypt zfsinfo lvm mdraid09 mdraid1x raid5rec raid6rec video"
+
+      cp -f ${CRAFT_STAGE}/usr/lib/shim/shimx64.efi.signed.latest            \
+        shim.efi.signed
+      cp -f ${CRAFT_STAGE}/usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed \
+        grubx64.efi
+
+      dd \
+        if=${CRAFT_STAGE}/usr/lib/grub/i386-pc/boot.img \
+        of=pc-boot.img bs=440 count=1
+
+      echo -ne '\x90\x90'         | dd of=pc-boot.img seek=102 bs=1 conv=notrunc
+      echo -ne '\x01\x08\x00\x00' | dd of=pc-core.img seek=500 bs=1 conv=notrunc
+
+      grub-mkimage \
+        -d ${CRAFT_STAGE}/usr/lib/grub/i386-pc/ \
+        -O i386-pc -o pc-core.img -p '(,gpt2)/EFI/ubuntu' \
+        ${GRUB_LEGACY_MODULES}
+
+      install -m644 pc-boot.img pc-core.img shim.efi.signed grubx64.efi \
+        "${CRAFT_PART_INSTALL}/"
+
+hooks:
+  prepare-device:
+    environment:
+      MODEL_APIKEY: APIKEY_STANDIN
