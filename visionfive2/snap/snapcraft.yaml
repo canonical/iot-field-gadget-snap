@@ -1,0 +1,160 @@
+name: iotdevice-visionfive2
+type: gadget
+base: core22
+build-base: devel
+version: 22-1
+summary: StarFive VisionFive 2 gadget
+description: |
+  Support files for booting the StarFive VisionFive 2
+
+grade: devel
+confinement: strict
+
+assumes: [kernel-assets]
+
+architectures:
+  - build-on:  [amd64, riscv64]
+    build-for: [riscv64]
+
+package-repositories:
+  - type: apt
+    suites: [mantic]
+    components: [main]
+    architectures: [riscv64]
+    key-id: BD1DB3F88CA5F7825AF79D5552663FF2DFDC39CA
+    url: https://ppa.launchpadcontent.net/ubuntu-risc-v-team/release/ubuntu
+
+parts:
+  boot-sel:
+    plugin: nil
+    build-packages:
+      - u-boot-tools
+    override-build: |
+      mkenvimage -r -s 4096 -o "${CRAFT_PART_INSTALL}/boot.sel" - < /dev/null
+
+      touch "${CRAFT_PART_INSTALL}/uboot.conf"
+
+  boot-scr:
+    plugin: nil
+    source: u-boot/
+    build-packages:
+      - u-boot-tools
+    override-build: |
+      mkimage \
+        -T script \
+        -C none \
+        -n 'Boot Script' \
+        -d boot.scr.in \
+        "${CRAFT_PART_INSTALL}/boot.scr"
+
+  u-boot:
+    plugin: nil
+    stage-packages:
+      - u-boot-starfive:${CRAFT_ARCH_BUILD_FOR}
+    organize:
+      usr/lib/u-boot/starfive_visionfive2/u-boot.itb: visionfive2_fw_payload.img
+      usr/lib/u-boot/starfive_visionfive2/u-boot-spl.bin.normal.out: u-boot-spl.bin.normal.out
+    stage:
+      - u-boot-spl.bin.normal.out
+      - visionfive2_fw_payload.img
+
+  # u-boot:
+  #   plugin: make
+  #   source: https://github.com/starfive-tech/u-boot
+  #   source-type: git
+  #   source-depth: 1
+  #   source-branch: JH7110_VisionFive2_devel
+  #   build-environment:
+  #     - to riscv64:
+  #       - ARCH: riscv
+  #       - CROSS_COMPILE: riscv64-linux-gnu-
+  #   build-packages:
+  #     - bison
+  #     - flex
+  #     - libssl-dev
+  #     - to riscv64:
+  #       - gcc-riscv64-linux-gnu
+  #     - on riscv64:
+  #       - gcc
+  #   override-build: |
+  #     # sed -i 's/bootenv=uEnv.txt/bootenv=boot.scr/' include/configs/starfive-visionfive2.h
+
+  #     # sed -i 's/run load_vf2_env;run importbootenv;run boot2; run scan_boot_dev; run load_distro_uenv;run distro_bootcmd/ext4load mmc 1:3 0x60000000 boot.scr; source 0x60000000/' configs/starfive_visionfive2_defconfig
+  #     make starfive_visionfive2_defconfig
+
+  #     # echo CONFIG_ENV_IS_IN_MMC=y    >> .config
+  #     # echo CONFIG_SYS_MMC_ENV_DEV=1  >> .config
+  #     # echo CONFIG_SYS_MMC_ENV_PART=3 >> .config
+
+  #     # make olddefconfig
+  #     make
+
+  #     cp -f spl/u-boot-spl.bin u-boot.bin \
+  #           arch/riscv/dts/starfive_visionfive2.dtb "${CRAFT_PART_INSTALL}/"
+  #   prime:
+  #     - -*
+
+  # opensbi:
+  #   after: [u-boot]
+  #   plugin: make
+  #   source: https://github.com/starfive-tech/opensbi
+  #   source-type: git
+  #   source-depth: 1
+  #   source-commit: c6a092cd80112529cb2e92e180767ff5341b22a3
+  #   build-environment:
+  #     - PLATFORM: generic
+  #     - FW_PAYLOAD_PATH: ${CRAFT_STAGE}/u-boot.bin
+  #     - FW_FDT_PATH: ${CRAFT_STAGE}/starfive_visionfive2.dtb
+  #     - FW_TEXT_START: "0x40000000"
+  #     - to riscv64:
+  #       - ARCH: riscv
+  #       - CROSS_COMPILE: riscv64-linux-gnu-
+  #   build-packages:
+  #     - python3
+  #     - to riscv64:
+  #       - gcc-riscv64-linux-gnu
+  #     - on riscv64:
+  #       - gcc
+  #   override-build: |
+  #     make
+
+  #     cp -f build/platform/generic/firmware/fw_payload.bin "${CRAFT_PART_INSTALL}/"
+
+  # spl:
+  #   after: [u-boot, opensbi]
+  #   plugin: make
+  #   source: https://github.com/starfive-tech/Tools
+  #   source-type: git
+  #   source-depth: 1
+  #   source-commit: 6067c32c4cc11749a503b0708d98d6d45022cc0c
+  #   build-packages:
+  #     - device-tree-compiler
+  #     - make
+  #   override-build: |
+  #     make -C spl_tool
+
+  #     install -Dm755 spl_tool/spl_tool "${CRAFT_PART_INSTALL}/"
+  #     cp -f uboot_its/visionfive2-uboot-fit-image.its "${CRAFT_PART_INSTALL}/"
+  #   override-stage: |
+  #     craftctl default
+
+  #     # Create the u-boot-spl.bin.normal.out and
+  #     # create the actual payload as a FIT image.
+  #     ./spl_tool --creat-splhdr --file "${CRAFT_STAGE}/u-boot-spl.bin"
+
+  #     # Belong in:
+  #     # /dev/mmcblk{0,1}p1, /dev/mtd0 (SPL)
+  #     # /dev/mmcblk{0,1}p2, /dev/mtd1 (FIT)
+
+  #     mkimage \
+  #       -A riscv \
+  #       -O u-boot \
+  #       -T firmware \
+  #       -f visionfive2-uboot-fit-image.its \
+  #       visionfive2_fw_payload.img
+
+  #     # cp -f u-boot-spl.bin.normal.out \
+  #           # visionfive2_fw_payload.img "${CRAFT_PRIME}/"
+  #   prime:
+  #     - u-boot-spl.bin.normal.out
+  #     - visionfive2_fw_payload.img
