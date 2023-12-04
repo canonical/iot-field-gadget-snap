@@ -30,17 +30,12 @@ package-repositories:
 parts:
   boot-scr:
     plugin: nil
-    source: boot-scr/
+    source: boot-scr
     override-build: |
-      mkimage \
-        -C none \
-        -O linux \
-        -T script \
-        -d boot.scr.in \
-        -n 'U-Boot boot script' \
-        ${CRAFT_PART_INSTALL}/boot.scr
+      mkimage -f "${CRAFT_PART_SRC}"/boot.fit "${CRAFT_PART_INSTALL}"/boot.scr
     build-packages:
       - u-boot-tools
+      - device-tree-compiler
 
   # Make an empty environment file so that Ubuntu Core can adjust the boot
   # variables later

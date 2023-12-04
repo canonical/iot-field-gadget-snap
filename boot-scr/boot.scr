@@ -4,8 +4,6 @@ setenv mmcdev                   "0"
 setenv mmc_seed_part            "1"
 setenv mmc_boot_part            "3"
 setenv console                  "earlycon=sbi"
-setenv loadaddr                 "0x40000000"
-setenv fitloadaddr              "0x50000000"
 
 # Ubuntu Core config
 setenv kernel_bootpart          "${mmc_seed_part}"
@@ -14,8 +12,6 @@ setenv core_state               "/uboot/ubuntu/boot.sel"
 setenv kernel_vars              "snap_kernel snap_try_kernel kernel_status"
 setenv recovery_vars            "snapd_recovery_mode snapd_recovery_system snapd_recovery_kernel"
 setenv snapd_recovery_mode      "install"
-
-setenv bootargs "${console} uio_pdrv_genirq.of_id=generic-uio nvme_core.default_ps_max_latency_us=2000 ${bootargs}"
 
 load ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state}
 env import -t ${loadaddr} ${filesize} ${recovery_vars}
@@ -44,5 +40,7 @@ else
     setenv kernel_prefix "/systems/${snapd_recovery_system}/kernel/"
 fi
 
-load ${devtype} ${mmcdev}:${kernel_bootpart} ${fitloadaddr} ${kernel_prefix}/${kernel_filename}
-bootm ${fitloadaddr}
+setenv bootargs "${console} ${bootargs}"
+echo "Using bootargs: ${bootargs}"
+load ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${kernel_prefix}/${kernel_filename}
+bootm ${loadaddr}
