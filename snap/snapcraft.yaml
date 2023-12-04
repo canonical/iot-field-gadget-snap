@@ -14,6 +14,19 @@ architectures:
 
 confinement: strict
 
+package-repositories:
+  - type: apt
+    architectures: ["${CRAFT_TARGET_ARCH}"]
+    components: ["main"]
+    formats: ["deb"]
+    suites:
+      - jammy
+      - jammy-updates
+      - jammy-security
+    key-server: keyserver.ubuntu.com
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://ports.ubuntu.com/ubuntu-ports
+
 parts:
   boot-scr:
     plugin: nil
