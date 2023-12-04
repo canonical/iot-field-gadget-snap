@@ -1,0 +1,33 @@
+/dts-v1/;
+
+/ {
+    description = "Ubuntu boot script";
+    #address-cells = <1>;
+
+    images {
+        default = "ubuntu-1";
+
+        ubuntu-1 {
+            description = "Ubuntu boot script";
+            data = /incbin/("./boot.scr");
+            type = "script";
+            compression = "none";
+            hash {
+                algo = "sha256";
+            };
+        };
+    };
+
+    configurations {
+        default = "ubuntu-1";
+
+        ubuntu-1 {
+            description = "Ubuntu boot script";
+            script = "ubuntu-1";
+
+            hash {
+                algo = "sha256";
+            };
+        };
+    };
+};
