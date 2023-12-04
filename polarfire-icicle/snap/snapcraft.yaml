@@ -67,11 +67,27 @@ parts:
     stage:
       - payload.bin
 
-  # Provides uuidgen for use in prepare-device hooks
-  prepare-device:
+  hooks:
     plugin: nil
+    source: hooks
     stage-packages:
-      - uuid-runtime
+      - uuid-runtime:${CRAFT_TARGET_ARCH}
+    override-build: |
+      if [[ -z ${MODEL_APIURL+x} || -z ${MODEL_APIKEY+x} ]]; then
+        echo "MODEL_APIKEY or MODEL_APIURL not set; not creating prepare-device hook"
+      else
+        sed -i "s;<<<MODEL_APIURL>>>;${MODEL_APIURL};" \
+          ${CRAFT_PART_BUILD}/prepare-device.inc
+        sed -i "s;<<<MODEL_APIKEY>>>;${MODEL_APIKEY};" \
+          ${CRAFT_PART_BUILD}/prepare-device.inc
+
+        install -Dm0755 ${CRAFT_PART_BUILD}/prepare-device.inc \
+          ${CRAFT_PART_INSTALL}/snap/hooks/prepare-device
+      fi
+    prime:
+      - -usr/share/doc
+      - -usr/share/man
+      - -usr/share/bash-completion
 
 slots:
   icicle-gpio-0:
