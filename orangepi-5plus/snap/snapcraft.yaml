@@ -83,7 +83,7 @@ parts:
 
       VER=$(strings u-boot-rockchip.bin | grep -E '^U-Boot [0-9]+' | cut -f2 -d\ )
       craftctl set version="${VER}"
-      craftctl set grade="devel"
+      craftctl set grade="stable"
     prime:
       - u-boot-rockchip.bin
 
