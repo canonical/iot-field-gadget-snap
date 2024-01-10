@@ -14,7 +14,7 @@ volumes:
         content:
           - image: u-boot-rockchip.bin
         update:
-          edition: 3
+          edition: 4
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
@@ -24,7 +24,7 @@ volumes:
           - source: boot.scr
             target: /
         update:
-          edition: 3
+          edition: 4
       - name: ubuntu-boot
         role: system-boot
         filesystem: vfat
