@@ -89,7 +89,7 @@ parts:
 
   boot-scr:
     plugin: nil
-    source: u-boot
+    source: boot-scr
     override-build: |
       mkimage -A arm64 -T script -C none -n 'Boot Script' -d boot.scr.in \
         ${CRAFT_PART_INSTALL}/boot.scr
