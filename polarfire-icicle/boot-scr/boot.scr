@@ -14,13 +14,13 @@ setenv recovery_vars            "snapd_recovery_mode snapd_recovery_system snapd
 setenv snapd_recovery_mode      "install"
 
 load ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state}
-env import -t ${loadaddr} ${filesize} ${recovery_vars}
+env import -c ${loadaddr} ${filesize} ${recovery_vars}
 
 if test "${snapd_recovery_mode}" = "run"; then
     setenv bootargs "snapd_recovery_mode=${snapd_recovery_mode} ${bootargs}"
     setenv kernel_bootpart ${mmc_boot_part}
     load ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state}
-    env import -t ${loadaddr} ${filesize} ${kernel_vars}
+    env import -c ${loadaddr} ${filesize} ${kernel_vars}
     setenv kernel_name ${snap_kernel}
     if test -n "${kernel_status}"; then
         if test "${kernel_status}" = "try"; then
@@ -31,7 +31,7 @@ if test "${snapd_recovery_mode}" = "run"; then
         elif test "${kernel_status}" = "trying"; then
             setenv kernel_status ""
         fi;
-        env export -t ${loadaddr} ${kernel_vars}
+        env export -c ${loadaddr} ${kernel_vars}
         save ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state} ${filesize}
     fi;
     setenv kernel_prefix "/uboot/ubuntu/${kernel_name}/"
