@@ -3,23 +3,17 @@ setenv devtype                  "mmc"
 setenv mmcdev                   "1"
 setenv mmc_seed_part            "1"
 setenv mmc_boot_part            "2"
-setenv console                  "earlycon"
-setenv kernel_addr_r            "0x20000000"
-setenv ramdisk_addr_r           "0x28000000"
-setenv fdt_addr_r               "0x10000000"
-setenv loadaddr                 "0x18000000"
-setenv kernel_filename          "kernel.img"
-setenv ramdisk_name             "initrd.img"
-setenv fdt_name                 "dtbs/meson-sm1-odroid-hc4.dtb"
+setenv console                  "console=ttyFIQ0"
+setenv loadaddr                 "0x40000000"
+setenv fitloadaddr              "0x50000000"
 
 # Ubuntu Core config
 setenv kernel_bootpart          "${mmc_seed_part}"
+setenv kernel_filename          "kernel.img"
 setenv core_state               "/uboot/ubuntu/boot.sel"
 setenv kernel_vars              "snap_kernel snap_try_kernel kernel_status"
 setenv recovery_vars            "snapd_recovery_mode snapd_recovery_system snapd_recovery_kernel"
 setenv snapd_recovery_mode      "install"
-
-setenv bootargs "${console} ${bootargs}"
 
 load ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state}
 env import -t ${loadaddr} ${filesize} ${recovery_vars}
@@ -48,11 +42,6 @@ else
     setenv kernel_prefix "/systems/${snapd_recovery_system}/kernel/"
 fi
 
-load ${devtype} ${mmcdev}:${kernel_bootpart} ${kernel_addr_r} "${kernel_prefix}${kernel_filename}"
-load ${devtype} ${mmcdev}:${kernel_bootpart} ${ramdisk_addr_r} "${kernel_prefix}${ramdisk_name}"
-setenv ramdisk_size $filesize
-load ${devtype} ${mmcdev}:${kernel_bootpart} ${fdt_addr_r} "${kernel_prefix}${fdt_name}"
-
-fdt addr ${fdt_addr_r}
-
-booti ${kernel_addr_r} ${ramdisk_addr_r}:${ramdisk_size} ${fdt_addr_r}
+echo "Using bootargs: ${bootargs}"
+load ${devtype} ${mmcdev}:${kernel_bootpart} ${fitloadaddr} ${kernel_prefix}/${kernel_filename}
+bootm ${fitloadaddr}
