@@ -3,32 +3,32 @@
 # Copyright (C) 2022 Isaac True
 
 volumes:
-  odroid-hc4:
-    schema: mbr
+  orange-pi-5plus:
+    schema: "gpt"
     bootloader: u-boot
     structure:
       - name: u-boot
-        offset: 512
+        offset: 32768
         type: bare
-        size: 1048064
+        size: 16777216
         content:
-          - image: u-boot.bin
+          - image: u-boot-rockchip.bin
         update:
-          edition: 2
+          edition: 3
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
-        type: "0C"
+        type: "0C,C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
         size: 1500M
         content:
           - source: boot.scr
             target: /
         update:
-          edition: 2
+          edition: 3
       - name: ubuntu-boot
         role: system-boot
         filesystem: vfat
-        type: "83"
+        type: "83,0FC63DAF-8483-4772-8E79-3D69D8477DE4"
         size: 1500M
         content:
           - source: boot.sel
@@ -36,10 +36,28 @@ volumes:
       - name: ubuntu-save
         role: system-save
         filesystem: ext4
-        type: "83"
+        type: "83,0FC63DAF-8483-4772-8E79-3D69D8477DE4"
         size: 16M
       - name: ubuntu-data
         role: system-data
         filesystem: ext4
-        type: "83"
-        size: 1G
+        type: "83,0FC63DAF-8483-4772-8E79-3D69D8477DE4"
+        size: 512M
+
+defaults:
+  system:
+    watchdog:
+      runtime-timeout: 30s
+    system:
+      network:
+        netplan:
+          network:
+            version: 2
+            ethernets:
+              r8125:
+                match:
+                  driver: r8169
+                  name: en*
+                dhcp4: true
+                dhcp6: true
+                optional: true
