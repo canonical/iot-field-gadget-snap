@@ -1,0 +1,42 @@
+From 30a15d94cfe3e5df0db8a6a295eb2920699012c7 Mon Sep 17 00:00:00 2001
+From: Isaac True <isaac.true@canonical.com>
+Date: Thu, 23 Nov 2023 12:56:37 +0100
+Subject: [PATCH] arm: dts: rockchip: enable OP-TEE support
+
+The binary distributed by Rockchip for the rk3588 is a .bin file,
+which cannot be used by the default configuration which expects an ELF
+file.
+
+Signed-off-by: Isaac True <isaac.true@canonical.com>
+---
+ arch/arm/dts/rockchip-u-boot.dtsi | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/dts/rockchip-u-boot.dtsi b/arch/arm/dts/rockchip-u-boot.dtsi
+index c8c928c7e50..b3f727efc60 100644
+--- a/arch/arm/dts/rockchip-u-boot.dtsi
++++ b/arch/arm/dts/rockchip-u-boot.dtsi
+@@ -100,18 +100,15 @@
+ #endif
+ 				};
+ 				@tee-SEQ {
+-					fit,operation = "split-elf";
+ 					description = "TEE";
+ 					type = "tee";
+ 					arch = "arm64";
+ 					os = "tee";
+ 					compression = "none";
+-					fit,load;
+-					fit,entry;
+-					fit,data;
++					load = <(CFG_SYS_SDRAM_BASE + 0x8400000)>;
++					entry = <(CFG_SYS_SDRAM_BASE + 0x8400000)>;
+ 
+ 					tee-os {
+-						optional;
+ 					};
+ #ifdef CONFIG_SPL_FIT_SIGNATURE
+ 					hash {
+-- 
+2.40.1
+

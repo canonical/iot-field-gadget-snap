@@ -37,9 +37,16 @@ parts:
       - u-boot-tools
       - device-tree-compiler
 
+  u-boot-patches:
+    plugin: dump
+    source: u-boot
+    prime:
+      - -*
+
   u-boot:
     after:
       - rkbin
+      - u-boot-patches
     plugin: nil
     source: https://github.com/u-boot/u-boot.git
     source-tag: v2024.01-rc3
@@ -67,9 +74,11 @@ parts:
       - CROSS_COMPILE: "${CRAFT_ARCH_TRIPLET}-"
       - PATH: "/usr/lib/ccache:${PATH}"
       - BL31: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_bl31_v1.40.elf"
-      - BL32: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_bl32_v1.13.bin"
+      - TEE: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_bl32_v1.13.bin"
       - ROCKCHIP_TPL: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_ddr_lp4_2112MHz_lp5_2736MHz_v1.12.bin"
     override-build: |
+      git apply "${CRAFT_STAGE}/0001-arm-dts-rockchip-enable-OP-TEE-support.patch"
+
       make orangepi-5-plus-rk3588_defconfig
       echo CONFIG_BOOTDELAY=0 >> .config
       make
