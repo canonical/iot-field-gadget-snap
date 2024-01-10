@@ -80,7 +80,7 @@ parts:
       git apply "${CRAFT_STAGE}/0001-arm-dts-rockchip-enable-OP-TEE-support.patch"
 
       make orangepi-5-plus-rk3588_defconfig
-      echo CONFIG_BOOTDELAY=0 >> .config
+      ./scripts/config --set-val BOOTDELAY 0
       make
       cp u-boot-rockchip.bin ${CRAFT_PART_INSTALL}/
 
