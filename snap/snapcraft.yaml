@@ -49,7 +49,7 @@ parts:
       - u-boot-patches
     plugin: nil
     source: https://github.com/u-boot/u-boot.git
-    source-tag: v2024.01-rc3
+    source-tag: v2024.01
     source-type: git
     source-depth: 1
     build-packages:
