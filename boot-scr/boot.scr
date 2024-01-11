@@ -18,6 +18,8 @@ setenv snapd_recovery_mode      "install"
 load ${devtype} ${mmcdev}:${kernel_bootpart} ${loadaddr} ${core_state}
 env import -c ${loadaddr} ${filesize} ${recovery_vars}
 
+setenv bootargs "lockdown=integrity"
+
 if test "${snapd_recovery_mode}" = "run"; then
     setenv bootargs "snapd_recovery_mode=${snapd_recovery_mode} ${bootargs}"
     setenv kernel_bootpart ${mmc_boot_part}
