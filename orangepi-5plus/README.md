@@ -9,3 +9,7 @@ Important: the SPI flash must be erased on the board to force it to boot from th
 # Building
 
 Please note that due to a bug in the U-Boot code (https://github.com/hardkernel/u-boot/issues/73) the package `libfdt-dev` cannot be installed at the same time. This can cause issues when building the kernel snap on the same system as that needs this package.
+
+# Notes
+
+OP-TEE support is a work-in-progress.
