@@ -82,6 +82,23 @@ parts:
 
       ./scripts/config --set-val BOOTDELAY 0
       ./scripts/config --enable SYS_REDUNDAND_ENVIRONMENT
+      ./scripts/config --enable STACKPROTECTOR
+      ./scripts/config --enable SPL_STACKPROTECTOR
+      ./scripts/config --disable CMD_STACKPROTECTOR_TEST
+      ./scripts/config --disable LEGACY_IMAGE_FORMAT
+      ./scripts/config --disable SPL_HEXDUMP
+      ./scripts/config --disable EFI_LOADER
+
+      # Enable OP-TEE support. Note: this does not actually work yet
+      ./scripts/config --enable TEE
+      ./scripts/config --enable OPTEE
+      ./scripts/config --enable OPTEE_SERVICE_DISCOVERY
+      ./scripts/config --disable OPTEE_LIB
+      ./scripts/config --disable CHIMP_OPTEE
+      ./scripts/config --disable OPTEE_TA_AVB
+      ./scripts/config --disable OPTEE_TA_SCP03
+      ./scripts/config --disable CMD_OPTEE_RPMB
+      ./scripts/config --disable SCP03
 
       make
 
