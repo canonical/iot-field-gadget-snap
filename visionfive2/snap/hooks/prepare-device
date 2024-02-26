@@ -1,0 +1,16 @@
+#!/bin/sh
+
+set -eu
+
+if [ -z "$MODEL_APIKEY" ] ; then
+    exit 0
+fi
+
+exec >> $SNAP_COMMON/prepare-device-hook.log 2>&1
+
+# If you are forking and building your own gadget:
+# implement your preferred way of generating a serial number for this device here
+snapctl set registration.proposed-serial="\"$(date -u)\""
+
+snapctl set device-service.url="http://10.0.2.2:8080/v1/"
+snapctl set device-service.headers="{\"api-key\": \"$MODEL_APIKEY\"}"
