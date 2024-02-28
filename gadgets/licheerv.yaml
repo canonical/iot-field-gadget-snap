@@ -1,20 +1,14 @@
 volumes:
-  nezha:
+  licheerv:
     schema: gpt
-    bootloader: u-boot
+    bootloader: grub
     structure:
       - name: spl
         type: bare
         offset: 131072
         size: 65536
         content:
-          - image: boot0_sdcard_sun20iw1p1.bin
-      - name: toc1
-        type: bare
-        offset: 16793600
-        size: 1048576
-        content:
-          - image: u-boot.toc1
+          - image: licheerv-boot0_sdcard_sun20iw1p1.bin
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
@@ -22,16 +16,17 @@ volumes:
         size: 800M
         offset: 40M
         content:
-          - source: boot.scr
-            target: /
+          - source: grubriscv64.efi
+            target: EFI/boot/grubriscv64.efi
       - name: ubuntu-boot
         role: system-boot
         filesystem: ext4
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         size: 800M
         content:
-          - source: boot.sel
-            target: uboot/ubuntu/boot.sel
+        content:
+          - source: grubriscv64.efi
+            target: EFI/boot/grubriscv64.efi
       - name: ubuntu-save
         role: system-save
         filesystem: ext4

@@ -1,13 +1,31 @@
 name: nezha
-version: 22-1
-summary: Nezha board gadget
+adopt-info: grub
+summary: An Ubuntu Core gadget for the RISC-V AllWinner Nezha
 description: |
-  Support files for booting the Nezha board
-base: core22
+  This snap provides the u-boot and GRUB binaries for booting the RISC-V
+  AllWinner Nezha.
+
+  Additionally it includes the gadget.yaml which defines our partition layout
+  and any default configuration options for our Ubuntu Core device.
+
+  ** Note that the license information of this snap is incomplete **
+  Do your due diligence to ensure compliance with the licenses of the contents of this snap.
+
+  The uEnv.txt, gadget.yaml, grub.builtin, and snapcraft.yaml are licensed under CC-BY-SA-4.0
+
+  You can find many licenses for the contents of this snap at the following locations:
+
+  All provided: licenses/
+base: core24
+build-base: devel
 type: gadget
 
+grade: devel
 confinement: strict
-grade: stable
+
+license: "Beerware AND BSD-2-Clause AND BSD-3-Clause AND CC-BY-SA-3.0 AND CC-BY-SA-4.0 AND GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.1 AND MIT"
+website: https://github.com/canonical/iot-field-kernel-snap
+issues: https://github.com/canonical/iot-field-kernel-snap/issues
 
 assumes: [kernel-assets]
 
@@ -15,46 +33,119 @@ architectures:
   - build-on:  [amd64, riscv64]
     build-for: [riscv64]
 
+# Provides GRUB and u-boot for target hardware
+package-repositories:
+  - type: apt
+    components: [main, universe]
+    architectures: [riscv64]
+    suites: [noble, noble-security, noble-updates]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://ports.ubuntu.com/ubuntu-ports
+
 parts:
-  boot-scr:
+  # Because our boot asset is different depending on our target hardware, we
+  # have to use a different gadget.yaml for either board. There is no good
+  # generic mechanism for changing your gadget.yaml on the fly, so the only
+  # effective mechanism for telegraphing this requirement across multiple parts
+  # to snapcraft is by creating some file in the project directory to be checked
+  # by each part to inform its behavior.
+  gadget:
     plugin: nil
-    source: u-boot/
-    build-packages:
-      - u-boot-tools
     override-build: |
-      mkimage \
-        -T script \
-        -C none \
-        -n 'Boot Script' \
-        -d boot.scr.in \
-        ${CRAFT_PART_INSTALL}/boot.scr
+      set +x
+      # For now, dirty $CRAFT_PROJECT_DIR. Need to find a cleaner solution.
 
-  boot0:
-    plugin: nil
-    stage-packages:
-      - nezha-boot0
-    organize:
-      usr/lib/u-boot/nezha/boot0_sdcard_sun20iw1p1.bin: boot0_sdcard_sun20iw1p1.bin
-    stage:
-      - boot0_sdcard_sun20iw1p1.bin
+      count=$(find "${CRAFT_PROJECT_DIR}" -name "*.board" -maxdepth 1 -type f | wc -l)
+      if [ "*.board" = "\*.board" ] || [ $count != 1 ]; then
+        echo "This gadget snap builds for two different devices:"
+        echo "LicheeRV or Nezha"
+        echo "This snap will not build properly if you do not tell it which device to build for."
+        echo "Please create a file named 'licheerv.board' or 'nezha.board' (but not both)"
+        echo "in the root of the project directory and then restart the build :)"
+        exit 1
+      fi
 
+      _board=$(basename "${CRAFT_PROJECT_DIR}/"*.board)
+      ln -sf "${CRAFT_PROJECT_DIR}/gadgets/${_board%.*}.yaml" "${CRAFT_PROJECT_DIR}/gadget.yaml"
+
+  # Grab the u-boot binary used to boot our hardware
+  # Note that the nezha and sipeed u-boot binaries are provided by the same deb
+  # package, but as separate files.
+  # This means that we will need to fetch the relevant binary for our specific
+  # board, so we will have two gadget snaps.
+  # This means that we will need two separate tracks for this gadget, one for
+  # nezha and one for sipeed, and that implies we will need tracks for each
+  # major base release for each of those boards. Gross.
+  # Ideally, we just ship each of these binaries as a component and the image
+  # builder selects which one to use at build time. That is TBD.
+  # For now, fetch use the correct asset based on a file in the build directory
+  # named <board>.board
   u-boot:
+    after: [gadget]
     plugin: nil
-    stage-packages:
-      - u-boot-nezha
-    organize:
-      usr/lib/u-boot/nezha/u-boot.toc1: u-boot.toc1
-    stage:
-      - u-boot.toc1
-
-  boot-sel:
-    plugin: nil
-    build-packages:
-      - u-boot-tools
+    stage-packages: [u-boot-nezha]
     override-build: |
-      mkenvimage -r -s 4096 -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
+      _board=$(basename "${CRAFT_PROJECT_DIR}/"*.board)
+      install -Dm644 "${CRAFT_PART_INSTALL}/usr/lib/u-boot/${_board%.*}/u-boot-sunxi-with-spl.bin" \
+      "${CRAFT_PART_INSTALL}/${_board%.*}-boot0_sdcard_sun20iw1p1.bin"
 
-      touch ${CRAFT_PART_INSTALL}/uboot.conf
+    organize:
+      usr/share/doc/u-boot-nezha/: licenses/u-boot-nezha/
+    stage:
+      - "*.bin"
+      - licenses/
+
+  grub:
+    after: [gadget, u-boot]
+    plugin: dump
+    source: grub/
+    stage-packages:
+      - grub-efi-riscv64:${CRAFT_ARCH_BUILD_FOR}
+    override-build: |
+      craftctl default
+      
+      craftctl set version=$(find "${CRAFT_PART_BUILD}/../stage_packages/" \
+                              -name grub-efi-${CRAFT_ARCH_BUILD_FOR}_*.deb \
+                              -exec dpkg-deb -f {} Version \;)
+
+      # grub.conf is required when bootloader is set to GRUB in the gadget.yaml
+      # so that snapd knows how to prepare the boot environment during image build
+      # and during general run mode
+      touch "${CRAFT_PART_INSTALL}/grub.conf"
+
+      # Ubuntu does not ship either a grub binary nor a signed binary+shim on
+      # this architecture As a result, we have to build the binary ourselves.
+      # Here are at least the more useful grub modules required for Ubuntu Core:
+      GRUB_MODULES="all_video boot cat chain configfile echo ext2 fat font \
+                    gettext gfxmenu gfxterm gfxterm_background gzio halt \
+                    jpeg keystatus loadenv loopback linux memdisk minicmd \
+                    normal part_gpt png reboot regexp search search_fs_uuid \
+                    search_fs_file search_label sleep squash4 test true video lsmmap"
+
+      # grub.builtin is a GRUB cfg file that we embed in GRUB to automate
+      # the booting process. It will search for a grub.cfg in the ubuntu-boot
+      # partition and if it doesn't exist fallback to the one in the ubuntu-seed
+      # partition. Both of these assets are controlled by snapd because we
+      # select GRUB as our bootloader.
+
+      "${CRAFT_PART_INSTALL}/usr/bin/grub-mkimage" -v -p efi -O  riscv64-efi                           \
+                                                   -c "${CRAFT_PART_INSTALL}/grub.builtin"             \
+                                                   -o "${CRAFT_PART_INSTALL}/grubriscv64.efi"          \
+                                                   -d "${CRAFT_PART_INSTALL}/usr/lib/grub/riscv64-efi" \
+                                                   ${GRUB_MODULES}
+
+      # uEnv.txt is a file that our u-boot binary will search for and source on
+      # boot. This file should launch our grubriscv64.efi binary and results in
+      # a fully automated boot process.
+
+    organize:
+      usr/share/doc/grub-efi-riscv64/:     licenses/grub-efi-riscv64/
+      usr/share/doc/grub-efi-riscv64-bin/: licenses/grub-efi-riscv64-bin/
+    stage:
+      - grub.conf
+      - grubriscv64.efi
+      - licenses/
+      - uEnv.txt
 
 hooks:
   prepare-device:
