@@ -1,0 +1,64 @@
+volumes:
+  nezha:
+    schema: gpt
+    # Specifying grub as the bootloader means that snapd will manage our boot
+    # assets, namely our grub.cfg. For more information on what those assets
+    # look like, see snapd/bootloader/assets
+    bootloader: grub
+    structure:
+      - name: spl
+        type: bare
+        # The board supports loading from sector 16 or sector 256.
+        # Unfortunately, sector 16 interferes with GPT schemes, so
+        # we have to bite the bullet and not have a backup loader.
+        # See:
+        # https://git.launchpad.net/ubuntu/+source/u-boot-nezha/tree/debian/README.Debian?h=applied/ubuntu/noble
+        # 256 * 512 = 131072
+        offset: 131072
+        # The size of the blob + some wiggle room for future size
+        # increases and to make the size divisible by 512.
+        size: 1048576
+        content:
+          - image: nezha-boot0_sdcard_sun20iw1p1.bin
+      - name: ubuntu-seed
+        role: system-seed
+        filesystem: vfat
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        # TODO: determine minimal size
+        size: 1200M
+        # TODO: Experiment with offset
+        offset: 40M
+        content:
+          - source: grubriscv64.efi
+            target: EFI/boot/grubriscv64.efi
+          - source: uEnv.txt
+            target: EFI/boot/uEnv.txt
+      - name: ubuntu-boot
+        role: system-boot
+        # Note that this partition cannot be vfat as a symlink to the kernel
+        # file is created, and symlinks are verboten on vfat.
+        filesystem: ext4
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: 1200M
+        content:
+          - source: grubriscv64.efi
+            target: EFI/boot/grubriscv64.efi
+          - source: uEnv.txt
+            target: EFI/boot/uEnv.txt
+      - name: ubuntu-save
+        role: system-save
+        filesystem: ext4
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: 16M
+      - name: ubuntu-data
+        role: system-data
+        filesystem: ext4
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: 1M
+
+# TODO: set other defaults?
+defaults:
+  system:
+    watchdog:
+      runtime-timeout: 16s
+      shutdown-timeout: 1m

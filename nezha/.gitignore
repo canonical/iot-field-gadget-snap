@@ -2,3 +2,7 @@
 parts/
 prime/
 stage/
+
+# Ignore some files only useful for determining the build
+/*.board
+/gadget.yaml
