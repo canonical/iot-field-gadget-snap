@@ -158,3 +158,8 @@ parts:
   #   prime:
   #     - u-boot-spl.bin.normal.out
   #     - visionfive2_fw_payload.img
+
+hooks:
+  prepare-device:
+    environment:
+      MODEL_APIKEY: ""
