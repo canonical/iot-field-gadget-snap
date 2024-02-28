@@ -55,3 +55,8 @@ parts:
       mkenvimage -r -s 4096 -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
 
       touch ${CRAFT_PART_INSTALL}/uboot.conf
+
+hooks:
+  prepare-device:
+    environment:
+      MODEL_APIKEY: ""
