@@ -1,0 +1,20 @@
+# A template uEnv.txt
+
+# This file can be used to provide some initial runtime environment options for
+#    the target hardware.
+
+# This file is usually sourced by u-boot during the initial boot process.
+
+# This file is not necessarily required, but may be necessary.
+
+# This file acts as a means of automating the early booting process to limit
+#    user intervention.
+
+# Its primary use is to define any required variables to pass to the kernel,
+# along with specifying the location of the GRUB binary and what memory address
+# to load it into. It then executes that GRUB binary.
+
+bootargs=console=earlyprintk console=ttyS0
+bootcmd_load_grub=load ${devtype} ${devnum}:${distro_bootpart} ${kernel_addr_r} /EFI/boot/grub<arch>.efi
+bootcmd_run_grub=bootefi ${kernel_addr_r}
+bootcmd=run bootcmd_load_grub; run bootcmd_run_grub
