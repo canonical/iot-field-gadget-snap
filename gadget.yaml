@@ -1,0 +1,72 @@
+# A template gadget.yaml
+# For a full specification of the gadget.yaml, please see:
+# https://snapcraft.io/docs/the-gadget-snap
+volumes:
+  <volume name>:
+    schema: <mbr|gpt>
+    bootloader: <u-boot|grub>
+    structure:
+      # Example of a bare structural item
+      # Named 'BIOS boot' if using MBR
+      - name: <descriptive name>
+        type: bare
+        offset: <if needed>
+        size: <a multiple of 512>
+        # Include an 'update' stanza, start at 1
+        update:
+          edition: 1
+        content:
+          - image: <file name to write to bare sectors>
+      # Example of a system-seed partition
+      - name: ubuntu-seed
+        role: system-seed
+        filesystem: vfat
+        type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
+        size: <twice the required size>
+        offset: <if needed>
+        # Include an 'update' stanza, start at 1
+        update:
+          edition: 1
+        content:
+          # GRUB vs u-boot
+          - source: <grub<arch>.efi|boot.scr>
+            target: <EFI/boot/grub<arch>.efi|/>
+          # If using u-boot, you might include
+          - source: uEnv.txt
+            target: EFI/boot/uEnv.txt
+      # Example of a system-boot partition
+      - name: ubuntu-boot
+        role: system-boot
+        # Note that this partition cannot be vfat as a symlink to the kernel
+        # file is created, and symlinks are verboten on vfat.
+        filesystem: ext4
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: <four times the kernel.{efi,img} size>
+        # Include an 'update' stanza, start at 1
+        update:
+          edition: 1
+        content:
+          # GRUB vs u-boot - should match at least system-seed
+          - source: <grub<arch>.efi|boot.scr>
+            target: <EFI/boot/grub<arch>.efi|/>
+          - source: uEnv.txt
+            target: EFI/boot/uEnv.txt
+          # If using u-boot, provide this file
+          - source: boot.sel
+            target: uboot/ubuntu/boot.sel
+      # Example system-save partition
+      - name: ubuntu-save
+        role: system-save
+        filesystem: ext4
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: 32M
+      # Example system-data partition
+      - name: ubuntu-data
+        role: system-data
+        filesystem: ext4
+        type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
+        size: 1M
+
+# Default configuration settings should go here
+
+# Default connection settings should go here
