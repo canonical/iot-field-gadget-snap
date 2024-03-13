@@ -17,6 +17,14 @@ architectures:
       - amd64
     build-for: arm64
 
+package-repositories:
+  - type: apt
+    components: [main]
+    architectures: [arm64]
+    suites: [jammy, jammy-security, jammy-updates]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://ports.ubuntu.com/ubuntu-ports
+
 parts:
   rkbin:
     plugin: dump
