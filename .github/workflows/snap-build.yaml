@@ -55,3 +55,165 @@ jobs:
         with:
           snapcraft-channel: latest/edge
           snapcraft-args: --verbosity=verbose
+
+  build_22_amd64_pc_classic_7:
+    name: 7.x/edge job for 22-amd64-pc-classic snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-amd64-pc-classic
+        uses: actions/checkout@v4
+        with:
+          ref: 22-amd64-pc-classic
+      - name: Test build of 22-amd64-pc-classic with snapcraft 7.x/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/edge
+          snapcraft-args: --verbosity=verbose
+  build_22_amd64_pc_classic_latest:
+    name: latest/edge job for 22-amd64-pc-classic snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-amd64-pc-classic
+        uses: actions/checkout@v4
+        with:
+          ref: 22-amd64-pc-classic
+      - name: Test build of 22-amd64-pc-classic with snapcraft latest/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: latest/edge
+          snapcraft-args: --verbosity=verbose
+
+  build_22_arm64_odroid_hc4_7:
+    name: 7.x/edge job for 22-arm64-odroid-hc4 snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-arm64-odroid-hc4
+        uses: actions/checkout@v4
+        with:
+          ref: 22-arm64-odroid-hc4
+      - name: Test build of 22-arm64-odroid-hc4 with snapcraft 7.x/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/edge
+          snapcraft-args: --verbosity=verbose
+  build_22_arm64_odroid_hc4_latest:
+    name: latest/edge job for 22-arm64-odroid-hc4 snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-arm64-odroid-hc4
+        uses: actions/checkout@v4
+        with:
+          ref: 22-arm64-odroid-hc4
+      - name: Test build of 22-arm64-odroid-hc4 with snapcraft latest/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: latest/edge
+          snapcraft-args: --verbosity=verbose
+
+  build_22_arm64_orange_pi_5plus_7:
+    name: 7.x/edge job for 22-arm64-orange-pi-5plus snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-arm64-orange-pi-5plus
+        uses: actions/checkout@v4
+        with:
+          ref: 22-arm64-orange-pi-5plus
+      - name: Test build of 22-arm64-orange-pi-5plus with snapcraft 7.x/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/edge
+          snapcraft-args: --verbosity=verbose
+  build_22_arm64_orange_pi_5plus_latest:
+    name: latest/edge job for 22-arm64-orange-pi-5plus snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-arm64-orange-pi-5plus
+        uses: actions/checkout@v4
+        with:
+          ref: 22-arm64-orange-pi-5plus
+      - name: Test build of 22-arm64-orange-pi-5plus with snapcraft latest/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: latest/edge
+          snapcraft-args: --verbosity=verbose
+
+  build_22_riscv64_icicle_7:
+    name: 7.x/edge job for 22-riscv64-icicle snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-riscv64-icicle
+        uses: actions/checkout@v4
+        with:
+          ref: 22-riscv64-icicle
+      - name: Test build of 22-riscv64-icicle with snapcraft 7.x/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/edge
+          snapcraft-args: --verbosity=verbose
+  build_22_riscv64_icicle_latest:
+    name: latest/edge job for 22-riscv64-icicle snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-riscv64-icicle
+        uses: actions/checkout@v4
+        with:
+          ref: 22-riscv64-icicle
+      - name: Test build of 22-riscv64-icicle with snapcraft latest/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: latest/edge
+          snapcraft-args: --verbosity=verbose
+
+  build_22_riscv64_nezha_7:
+    name: 7.x/edge job for 22-riscv64-nezha snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-riscv64-nezha
+        uses: actions/checkout@v4
+        with:
+          ref: 22-riscv64-nezha
+      - name: Test build of 22-riscv64-nezha with snapcraft 7.x/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/edge
+          snapcraft-args: --verbosity=verbose
+  build_22_riscv64_nezha_latest:
+    name: latest/edge job for 22-riscv64-nezha snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-riscv64-nezha
+        uses: actions/checkout@v4
+        with:
+          ref: 22-riscv64-nezha
+      - name: Test build of 22-riscv64-nezha with snapcraft latest/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: latest/edge
+          snapcraft-args: --verbosity=verbose
+
+  build_22_riscv64_virt_7:
+    name: 7.x/edge job for 22-riscv64-virt snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-riscv64-virt
+        uses: actions/checkout@v4
+        with:
+          ref: 22-riscv64-virt
+      - name: Test build of 22-riscv64-virt with snapcraft 7.x/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/edge
+          snapcraft-args: --verbosity=verbose
+  build_22_riscv64_virt_latest:
+    name: latest/edge job for 22-riscv64-virt snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-riscv64-virt
+        uses: actions/checkout@v4
+        with:
+          ref: 22-riscv64-virt
+      - name: Test build of 22-riscv64-virt with snapcraft latest/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: latest/edge
+          snapcraft-args: --verbosity=verbose
