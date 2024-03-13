@@ -1,0 +1,26 @@
+# A template grub.builtin
+
+# This file is only required if you have to create your own grub<arch>.efi file.
+# 
+# This file is seeded into the built GRUB binary to ensure that when GRUB
+# launches on the target hardware, it searches for some relevant partition for
+# the real configuration file to execute and executes that.
+# 
+# In the case of GRUB, that configuration file is entirely managed by snapd.
+# Avoid providing your own grub.cfg and instead, propose a change upstream:
+# https://github.com/snapcore/snapd/tree/master/bootloader/assets/data
+# 
+# or leverage the kernel parameters option in the gadget.yaml:
+# https://snapcraft.io/docs/the-gadget-snap#heading--dynamic
+
+set default=0
+set timeout=3
+
+insmod part_gpt
+insmod ext2
+
+search --no-floppy --label ubuntu-boot --set=root
+search --no-floppy --label ubuntu-seed --set=root
+
+set prefix=($root)
+configfile /EFI/ubuntu/grub.cfg
