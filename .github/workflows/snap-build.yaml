@@ -1,0 +1,57 @@
+name: Snap Builds CI
+
+# This workflow is intended to test that each snap provided as an example can be
+# built with some relevant version of snapcraft, with the aim of hopefully
+# catching bugs or regressions.
+# Please only create AMD64 build-on jobs. If you want non-AMD64 builds, use Launchpad.
+
+# Run the jobs on:
+#   1) 12PM UTC weekly on Monday
+on:
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+# Convention:
+# jobs:
+#   build_<branch name>_<snapcraft track>:
+#     name: <snapcraft track> job for <branch> snap
+#     runs-on: ubuntu-<base>
+#     steps:
+#       - name: Checkout <branch>
+#         uses: actions/checkout@v4
+#         with:
+#           ref: <branch>
+#       - name: Test build of <branch> snap with snapcraft <channel>
+#         uses: snapcore/action-build@v1
+#         with:
+#           snapcraft-channel: <track>/<risk>/<branch>
+#           snapcraft-args: --verbosity=verbose
+
+jobs:
+  build_22_amd64_pc_7:
+    name: 7.x/edge job for 22-amd64-pc snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-amd64-pc
+        uses: actions/checkout@v4
+        with:
+          ref: 22-amd64-pc
+      - name: Test build of 22-amd64-pc with snapcraft 7.x/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: 7.x/edge
+          snapcraft-args: --verbosity=verbose
+  build_22_amd64_pc_latest:
+    name: latest/edge job for 22-amd64-pc snap
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout 22-amd64-pc
+        uses: actions/checkout@v4
+        with:
+          ref: 22-amd64-pc
+      - name: Test build of 22-amd64-pc with snapcraft latest/edge
+        uses: snapcore/action-build@v1
+        with:
+          snapcraft-channel: latest/edge
+          snapcraft-args: --verbosity=verbose
