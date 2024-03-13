@@ -1,0 +1,70 @@
+# A template boot.scr.in
+
+# This file offers an example of a minimum-viable boot.scr file to be executed
+# by u-boot to boot Ubuntu Core.
+
+# The particulars of any of these environment variables or what kinds of files
+# are allowed to be loaded and executed are specific to whatever u-boot binary you
+# package with the gadget.
+
+# The final file you ship may barely resemble this file, and that is fine.
+# Simply attempt to enable an automated booting process which also allows for
+# potentially rolling back the kernel release or booting into Recovery.
+
+# Specify the booting device type and its device number.
+# Discoverable in u-boot console via tools like mmc, usb, etc.
+setenv devtype  mmc
+setenv devnum   0
+# The ubuntu-{seed,boot} partitions
+# This should align with their order in the gadget.yaml
+setenv seedpart 1
+setenv bootpart 2
+
+# The kernel, initrd, and device tree should be distributed as a FIT image.
+# It's possible that the kernel address is already defined in the environment.
+# If it is not, leverage tools like bd in the u-boot console to determine a
+# large enough memory address.
+setenv kernel_name kernel.img
+setenv kernel_addr_r 0x50000000
+
+# The boot.sel file contains information on the recovery system and the boot mode.
+# The recovery system is named based on the date of image creation
+# The boot mode is set by snapd, but is one of install|recovery|run.
+echo "Loading ubuntu-seed configuration..."
+load ${devtype} ${devnum}:${seedpart} ${scriptaddr} uboot/ubuntu/boot.sel
+env import ${scriptaddr}
+
+echo "Snapd boot mode: ${snapd_recovery_mode}"
+
+# Check if we are booting normally or if we have rolled back the kernel. The
+# specifics of our run mode are managed by snapd during the device's lifecycle.
+if test "${snapd_recovery_mode}" = "run"
+then
+    echo "Loading ubuntu-boot configuration..."
+    load ${devtype} ${devnum}:${bootpart} ${scriptaddr} uboot/ubuntu/boot.sel
+    env import ${scriptaddr}
+    setenv kernel_bootpart "${bootpart}"
+    if test "${kernel_status}" = "try"
+    then
+        echo "Trying to boot with ${snap_kernel}"
+        setenv prefix "uboot/ubuntu/${snap_try_kernel}/"
+    else
+        echo "Using ${snap_kernel}"
+        setenv prefix "uboot/ubuntu/${snap_kernel}/"
+    fi
+else
+    # Prefix within the seed partition to the boot files
+    setenv prefix "systems/${snapd_recovery_system}/kernel/"
+        setenv kernel_bootpart "${seedpart}"
+fi
+
+# Set any necessary arguments to pass to the kernel.
+# snapd_recovery_{mode,system} are passed to the initrd for snapd to use during boot.
+setenv console  "console=ttyS0,115200"
+setenv bootargs "${bootargs} ${console} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
+
+echo "Loading ${prefix}${kernel_name}..."
+
+# Again: the kernel, initrd, and device tree should be shipped as a FIT image.
+load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
+bootm ${kernel_addr_r}
