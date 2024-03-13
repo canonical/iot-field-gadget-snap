@@ -1,0 +1,114 @@
+# A template snapcraft.yaml
+# For a full specification of the snapcraft.yaml, please see:
+# https://snapcraft.io/docs/snapcraft-yaml-reference
+
+# Do not feel obligated to perfectly adhere to this style, but strive to include
+# as much metadata as possible.
+
+# The name should be generic -- do not leak secret information!
+# A store prefix should be considered as secret information.
+# The snaps here which include one will insert it during builds by using a
+# secret consumed by the relevant workflow.
+name: <platform>
+# The version is largely human readable, but should be meaningful.
+# For instance, if the device boots with GRUB, have the version match the GRUB
+# release used.
+adopt-info|version: <grub|u-boot|some useful string>
+# The summary should be short and simple
+# The base of the snap should match the base of the Ubuntu Core system.
+base: <base>
+# build-base should only be used if creating a gadget for a devel release of Ubuntu Core.
+type: gadget
+# The grade should always be stable unless the gadget is using a devel-grade build-base.
+grade: stable
+confinement: strict
+summary: An Ubuntu Core gadget for the <platform>
+# Again: always include license information.
+# Valid licenses: https://github.com/snapcore/snapd/blob/master/spdx/licenses.go
+license: "CC-BY-SA-4.0 AND ..."
+# This repository is upstream for this gadget. Optionally include your contact
+# information.
+website: https://github.com/canonical/iot-field-kernel-snap
+issues: https://github.com/canonical/iot-field-kernel-snap/issues
+# The description should include boilerplate information and a description of
+# any nuances with this gadget target platform.
+# Always include license information.
+description: |
+  This snap provides the <bootloader> binaries for booting <platform>.
+
+  Additionally it includes the gadget.yaml which defines our partition layout
+  and any default configuration options for our Ubuntu Core device.
+
+  ** Note that the license information of this snap is incomplete **
+  Do your due diligence to ensure compliance with the licenses of the contents of this snap.
+
+  The <text files you created> are licensed under CC-BY-SA-4.0
+
+  You can find many licenses for the contents of this snap at the following locations:
+
+  All provided: licenses/
+
+# If you want the gadget.yaml to refer to assets provided by the kernel
+# instead of this snap, use this key. See:
+# https://snapcraft.io/docs/snapcraft-top-level-metadata
+assumes: [kernel-assets]
+
+# At a minimum the snap should build natively.
+architectures:
+  - build-on:  [<arch>]
+    build-for: [<arch>]
+
+# Any additional repositories required.
+# For instance, if you are building on AMD64 for ARM64,
+package-repositories:
+  - type: apt
+    components: [main]
+    architectures: [<arch>]
+    suites: [<release>, <release>-security, <release>-updates]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://ports.ubuntu.com/ubuntu-ports
+
+# Please provide descriptive comments as necessary. Not everything needs to
+# be documented or explained, but explaining why things are done can always help
+# people who are learning!
+parts:
+  grub:
+    plugin: dump
+    source: grub/
+    stage-packages:
+      - grub-efi-<arch>:${CRAFT_ARCH_BUILD_FOR}
+    override-build: |
+      craftctl default
+      
+      craftctl set version=$(find "${CRAFT_PART_BUILD}/../stage_packages/" \
+                              -name grub-efi-${CRAFT_ARCH_BUILD_FOR}_*.deb \
+                              -exec dpkg-deb -f {} Version \;)
+
+      # grub.conf is required when bootloader is set to GRUB in the gadget.yaml
+      # so that snapd knows how to prepare the boot environment during image build
+      # and during general run mode
+      touch "${CRAFT_PART_INSTALL}/grub.conf"
+
+      # uEnv.txt is a file that our u-boot binary will search for and source on
+      # boot. This file should launch our grubriscv64.efi binary and results in
+      # a fully automated boot process.
+
+    # We should ship license information
+    organize:
+      usr/share/doc/grub-efi-<arch>/:     licenses/grub-efi-<arch>/
+      usr/share/doc/grub-efi-<arch>-bin/: licenses/grub-efi-<arch>-bin/
+    stage:
+      - grub.conf
+      - grub<arch>.efi
+      - licenses/
+
+# Any necessary hooks. For instance, you can specify the API key here to be used
+# by the prepare-device hook at runtime. If you don't know what an API key is,
+# feel free to remove this.
+# PLEASE do not check your API key into VCS :)
+# The snaps here which include one will insert it during builds by using a
+# secret consumed by the relevant workflow.
+hooks:
+  prepare-device:
+    environment:
+      MODEL_APIKEY: ""
