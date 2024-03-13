@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# A template default-configure hook.
+# For an example, please see:
+# https://snapcraft.io/docs/supported-snap-hooks#heading--default-configure
+
+# A default-configure hook is useful for passing configuration information from
+# the gadget snap to any application snaps during the first-boot of an Ubuntu
+# Core system.
+# It's quite possible you don't need this hook at all.

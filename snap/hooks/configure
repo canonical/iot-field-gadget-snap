@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# A template configure hook.
+# For an example, please see:
+# https://snapcraft.io/docs/supported-snap-hooks#heading--the-configure-hook
+
+# Note that a configure hook is only *required* if using a prepare-device hook.
+# It's quite possible you don't need this hook at all.

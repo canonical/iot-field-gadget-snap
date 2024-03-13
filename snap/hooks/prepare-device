@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# A template prepare-device hook.
+# For an example, please see:
+# https://snapcraft.io/docs/supported-snap-hooks#heading--prepare-device
+
+# A prepare-device hook is most useful for specifying device identity
+# information. For instance, the serial number and Serial Vault URL, along with
+# the API key corresponding to some model in the Serial Vault.
+# It's quite possible you don't need this hook at all.
+
+set -eu
+
+exec >> $SNAP_COMMON/prepare-device-hook.log 2>&1
+
+if [ -z "$MODEL_APIKEY" ] ; then
+    exit 0
+fi
+
+snapctl set registration.proposed-serial="\"$(date -u)\""
+snapctl set device-service.url="https://serial-vault-partners.canonical.com/v1/"
+snapctl set device-service.headers="{\"api-key\": \"$MODEL_APIKEY\"}"
