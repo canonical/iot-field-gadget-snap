@@ -114,6 +114,7 @@ parts:
       ./scripts/config --disable CMD_OPTEE_RPMB
       ./scripts/config --disable SCP03
 
+      make olddefconfig
       make
 
       cp u-boot-rockchip.bin ${CRAFT_PART_INSTALL}/
