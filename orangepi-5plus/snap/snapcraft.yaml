@@ -115,7 +115,7 @@ parts:
       ./scripts/config --disable SCP03
 
       make olddefconfig
-      make
+      make -j $(nproc)
 
       cp u-boot-rockchip.bin ${CRAFT_PART_INSTALL}/
       install -m0755 tools/mkenvimage tools/mkimage \
