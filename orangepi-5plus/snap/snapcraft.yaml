@@ -67,10 +67,10 @@ parts:
       - on arm64:
           - gcc
       - else:
-          - gcc-${CRAFT_ARCH_TRIPLET}
+          - gcc-${CRAFT_ARCH_TRIPLET_BUILD_FOR}
     build-environment:
       - ARCH: "arm"
-      - CROSS_COMPILE: "${CRAFT_ARCH_TRIPLET}-"
+      - CROSS_COMPILE: "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-"
       - PATH: "/usr/lib/ccache:${PATH}"
       - BL31: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_bl31_v1.40.elf"
       - TEE: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_bl32_v1.13.bin"
@@ -142,7 +142,7 @@ parts:
     plugin: nil
     source: hooks
     stage-packages:
-      - uuid-runtime:${CRAFT_TARGET_ARCH}
+      - uuid-runtime:${CRAFT_ARCH_BUILD_FOR}
     override-build: |
       if [[ -z ${MODEL_APIURL+x} || -z ${MODEL_APIKEY+x} ]]; then
         echo "MODEL_APIKEY or MODEL_APIURL not set; not creating prepare-device hook"
@@ -164,7 +164,7 @@ parts:
     plugin: nil
     source: fixups
     stage-packages:
-      - ethtool:${CRAFT_TARGET_ARCH}
+      - ethtool:${CRAFT_ARCH_BUILD_FOR}
     override-build: |
       install -Dm0755 ${CRAFT_PART_BUILD}/disable-offload.sh \
         -t ${CRAFT_PART_INSTALL}/usr/local/bin
