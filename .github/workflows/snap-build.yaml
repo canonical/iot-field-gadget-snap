@@ -9,7 +9,7 @@ name: Snap Builds CI
 #   1) 12PM UTC weekly on Monday
 on:
   schedule:
-    - cron: '0 12 * * 1'
+    - cron: '0 12 * * MON'
   workflow_dispatch:
 
 # Convention:
