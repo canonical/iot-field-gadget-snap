@@ -26,13 +26,24 @@ package-repositories:
     url: http://ports.ubuntu.com/ubuntu-ports
 
 parts:
-  rkbin:
+  rkbin-src:
     plugin: dump
     source: https://github.com/rockchip-linux/rkbin.git
     source-branch: master
     source-type: git
     organize:
       "*": rkbin/
+    prime:
+      - -*
+
+  rkbin:
+    after:
+      - rkbin-src
+    plugin: nil
+    source: utils
+    override-build: |
+      ./copy-rkbin-files.py "${CRAFT_STAGE}"/rkbin \
+        "${CRAFT_PART_INSTALL}"/rkbin
     prime:
       - -*
 
@@ -70,11 +81,14 @@ parts:
           - gcc-${CRAFT_ARCH_TRIPLET_BUILD_FOR}
     build-environment:
       - ARCH: "arm"
-      - CROSS_COMPILE: "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-"
+      - on arm64:
+        - CROSS_COMPILE: ""
+      - else:
+        - CROSS_COMPILE: "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-"
       - PATH: "/usr/lib/ccache:${PATH}"
-      - BL31: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_bl31_v1.40.elf"
-      - TEE: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_bl32_v1.13.bin"
-      - ROCKCHIP_TPL: "${CRAFT_STAGE}/rkbin/bin/rk35/rk3588_ddr_lp4_2112MHz_lp5_2736MHz_v1.12.bin"
+      - BL31: "${CRAFT_STAGE}/rkbin/rk3588_bl31.elf"
+      - TEE: "${CRAFT_STAGE}/rkbin/rk3588_bl32.bin"
+      - ROCKCHIP_TPL: "${CRAFT_STAGE}/rkbin/rk3588_ddr.bin"
     override-build: |
       git apply "${CRAFT_STAGE}/0001-arm-dts-rockchip-enable-OP-TEE-support.patch"
 
