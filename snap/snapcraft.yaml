@@ -106,6 +106,47 @@ parts:
       - grub<arch>.efi
       - licenses/
 
+  # u-boot provides the bootloader binary for our target hardware. This binary
+  # is of paramount importance when we declare u-boot as the bootloader in
+  # our gadget.yaml. This is the binary the bootrom of our target hardware
+  # should search for and execute after it performs its low-level device
+  # initialization. With some platforms, we are exceptionally lucky and a u-boot
+  # binary is provided for us (the RISC-V platforms supported on Ubuntu Classic
+  # are such an example). In other cases (as with many ARM64 platforms), we
+  # would have to build u-boot ourselves. The character of this part will change
+  # dramatically based on this fact.
+  u-boot:
+    # TODO: define skeleton u-boot part
+
+  # boot-sel provides a file snapd will look for just in case we choose u-boot
+  # as our bootloader in the gadget.yaml. This file is populated by snapd
+  # with important system information, like the name of the seed system and
+  # the recovery mode we are booting with which tells snapd whether we are
+  # installing Core, running Core, or trying to recover Core.
+  boot-sel:
+    after: [u-boot]
+    plugin: nil
+    build-packages:
+      - u-boot-tools
+    override-build: |
+      mkenvimage -r -s 4096 \
+        -o "${CRAFT_PART_INSTALL}/boot.sel" - < /dev/null
+
+        touch "${CRAFT_PART_INSTALL}/uboot.conf"
+
+  # boot-scr compiles our boot.scr.in file into an executable which u-boot can
+  # execute at runtime. This script performs the necessary actions to boot an
+  # Ubuntu Core system which declares u-boot as its bootloader.
+  boot-scr:
+    after: [u-boot]
+    plugin: nil
+    source: u-boot/
+    build-packages:
+      - u-boot-tools
+    override-build: |
+      mkimage -d boot.scr.in \
+        "${CRAFT_PART_INSTALL}/boot.scr"
+
 # Any necessary hooks. For instance, you can specify the API key here to be used
 # by the prepare-device hook at runtime. If you don't know what an API key is,
 # feel free to remove this.
