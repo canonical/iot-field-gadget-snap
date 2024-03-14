@@ -14,7 +14,7 @@ volumes:
         content:
           - image: u-boot-rockchip.bin
         update:
-          edition: 4
+          edition: 5
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
