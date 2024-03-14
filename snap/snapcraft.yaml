@@ -72,6 +72,10 @@ package-repositories:
 # be documented or explained, but explaining why things are done can always help
 # people who are learning!
 parts:
+  # The grub part is used to fetch a GRUB binary from the Ubuntu archive. This
+  # package should provide us everything we need for a gadget which specifies
+  # GRUB as a bootloader. Additionally, we can set the snap version information
+  # from the GRUB package we use.
   grub:
     plugin: dump
     source: grub/
