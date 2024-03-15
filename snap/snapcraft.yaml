@@ -137,6 +137,10 @@ parts:
       # uEnv.txt is a file that our u-boot binary will search for and source on
       # boot. This file should launch our grubriscv64.efi binary and results in
       # a fully automated boot process.
+      # NOTE: currently, uEnv.txt does not work when booting Core. After
+      # testing, its existence on the 'loader1' partition of the Server
+      # preinstalled image demonstrates that this file should work. Requires
+      # further investigation.
 
     organize:
       usr/share/doc/grub-efi-riscv64/:     licenses/grub-efi-riscv64/
