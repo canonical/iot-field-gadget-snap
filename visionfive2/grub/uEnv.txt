@@ -1,0 +1,4 @@
+bootargs=console=ttyS0 earlycon
+bootcmd_load_grub=load ${devtype} ${devnum}:${distro_bootpart} ${kernel_addr_r} /EFI/boot/grubriscv64.efi
+bootcmd_run_grub=bootefi ${kernel_addr_r}
+bootcmd=run bootcmd_load_grub; run bootcmd_run_grub
