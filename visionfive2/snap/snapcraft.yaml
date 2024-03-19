@@ -1,14 +1,31 @@
-name: iotdevice-visionfive2
+name: visionfive2
+adopt-info: grub
 type: gadget
-base: core22
+base: core24
 build-base: devel
-version: 22-1
-summary: StarFive VisionFive 2 gadget
+summary: An Ubuntu Core gadget for the StarFive VisionFive 2
 description: |
-  Support files for booting the StarFive VisionFive 2
+  This snap provides the u-boot and GRUB binaries for booting the RISC-V
+  StarFive VisionFive 2.
+
+  Additionally it includes the gadget.yaml which defines our partition layout
+  and any default configuration options for our Ubuntu Core device.
+
+  ** Note that the license information of this snap is incomplete **
+  Do your due diligence to ensure compliance with the licenses of the contents of this snap.
+
+  The uEnv.txt, gadget.yaml, grub.builtin, and snapcraft.yaml are licensed under CC-BY-SA-4.0
+
+  You can find many licenses for the contents of this snap at the following locations:
+
+  All provided: licenses/
 
 grade: devel
 confinement: strict
+
+license: "Beerware AND BSD-2-Clause AND BSD-3-Clause AND CC-BY-SA-3.0 AND CC-BY-SA-4.0 AND GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.1 AND MIT"
+website: https://github.com/canonical/iot-field-gadget-snap
+issues: https://github.com/canonical/iot-field-gadget-snap/issues
 
 assumes: [kernel-assets]
 
@@ -16,37 +33,16 @@ architectures:
   - build-on:  [amd64, riscv64]
     build-for: [riscv64]
 
+# Provides GRUB and u-boot for target hardware
 package-repositories:
   - type: apt
-    suites: [mantic]
-    components: [main]
+    components: [main, universe]
     architectures: [riscv64]
-    key-id: BD1DB3F88CA5F7825AF79D5552663FF2DFDC39CA
-    url: https://ppa.launchpadcontent.net/ubuntu-risc-v-team/release/ubuntu
+    suites: [noble, noble-security, noble-updates]
+    key-id: F6ECB3762474EDA9D21B7022871920D1991BC93C
+    url: http://ports.ubuntu.com/ubuntu-ports
 
 parts:
-  boot-sel:
-    plugin: nil
-    build-packages:
-      - u-boot-tools
-    override-build: |
-      mkenvimage -r -s 4096 -o "${CRAFT_PART_INSTALL}/boot.sel" - < /dev/null
-
-      touch "${CRAFT_PART_INSTALL}/uboot.conf"
-
-  boot-scr:
-    plugin: nil
-    source: u-boot/
-    build-packages:
-      - u-boot-tools
-    override-build: |
-      mkimage \
-        -T script \
-        -C none \
-        -n 'Boot Script' \
-        -d boot.scr.in \
-        "${CRAFT_PART_INSTALL}/boot.scr"
-
   u-boot:
     plugin: nil
     stage-packages:
@@ -58,106 +54,56 @@ parts:
       - u-boot-spl.bin.normal.out
       - visionfive2_fw_payload.img
 
-  # u-boot:
-  #   plugin: make
-  #   source: https://github.com/starfive-tech/u-boot
-  #   source-type: git
-  #   source-depth: 1
-  #   source-branch: JH7110_VisionFive2_devel
-  #   build-environment:
-  #     - to riscv64:
-  #       - ARCH: riscv
-  #       - CROSS_COMPILE: riscv64-linux-gnu-
-  #   build-packages:
-  #     - bison
-  #     - flex
-  #     - libssl-dev
-  #     - to riscv64:
-  #       - gcc-riscv64-linux-gnu
-  #     - on riscv64:
-  #       - gcc
-  #   override-build: |
-  #     # sed -i 's/bootenv=uEnv.txt/bootenv=boot.scr/' include/configs/starfive-visionfive2.h
+  grub:
+    after: [u-boot]
+    plugin: dump
+    source: grub/
+    stage-packages:
+      - grub-efi-riscv64:${CRAFT_ARCH_BUILD_FOR}
+    override-build: |
+      craftctl default
 
-  #     # sed -i 's/run load_vf2_env;run importbootenv;run boot2; run scan_boot_dev; run load_distro_uenv;run distro_bootcmd/ext4load mmc 1:3 0x60000000 boot.scr; source 0x60000000/' configs/starfive_visionfive2_defconfig
-  #     make starfive_visionfive2_defconfig
+      craftctl set version=$(find "${CRAFT_PART_BUILD}/../stage_packages/" \
+                              -name grub-efi-${CRAFT_ARCH_BUILD_FOR}_*.deb \
+                              -exec dpkg-deb -f {} Version \;)
 
-  #     # echo CONFIG_ENV_IS_IN_MMC=y    >> .config
-  #     # echo CONFIG_SYS_MMC_ENV_DEV=1  >> .config
-  #     # echo CONFIG_SYS_MMC_ENV_PART=3 >> .config
+      # grub.conf is required when bootloader is set to GRUB in the gadget.yaml
+      # so that snapd knows how to prepare the boot environment during image build
+      # and during general run mode
+      touch "${CRAFT_PART_INSTALL}/grub.conf"
 
-  #     # make olddefconfig
-  #     make
+      # Ubuntu does not ship either a grub binary nor a signed binary+shim on
+      # this architecture As a result, we have to build the binary ourselves.
+      # Here are at least the more useful grub modules required for Ubuntu Core:
+      GRUB_MODULES="all_video boot cat chain configfile echo ext2 fat font \
+                    gettext gfxmenu gfxterm gfxterm_background gzio halt \
+                    jpeg keystatus loadenv loopback linux memdisk minicmd \
+                    normal part_gpt png reboot regexp search search_fs_uuid \
+                    search_fs_file search_label sleep squash4 test true video lsmmap"
 
-  #     cp -f spl/u-boot-spl.bin u-boot.bin \
-  #           arch/riscv/dts/starfive_visionfive2.dtb "${CRAFT_PART_INSTALL}/"
-  #   prime:
-  #     - -*
+      # grub.builtin is a GRUB cfg file that we embed in GRUB to automate
+      # the booting process. It will search for a grub.cfg in the ubuntu-boot
+      # partition and if it doesn't exist fallback to the one in the ubuntu-seed
+      # partition. Both of these assets are controlled by snapd because we
+      # select GRUB as our bootloader.
 
-  # opensbi:
-  #   after: [u-boot]
-  #   plugin: make
-  #   source: https://github.com/starfive-tech/opensbi
-  #   source-type: git
-  #   source-depth: 1
-  #   source-commit: c6a092cd80112529cb2e92e180767ff5341b22a3
-  #   build-environment:
-  #     - PLATFORM: generic
-  #     - FW_PAYLOAD_PATH: ${CRAFT_STAGE}/u-boot.bin
-  #     - FW_FDT_PATH: ${CRAFT_STAGE}/starfive_visionfive2.dtb
-  #     - FW_TEXT_START: "0x40000000"
-  #     - to riscv64:
-  #       - ARCH: riscv
-  #       - CROSS_COMPILE: riscv64-linux-gnu-
-  #   build-packages:
-  #     - python3
-  #     - to riscv64:
-  #       - gcc-riscv64-linux-gnu
-  #     - on riscv64:
-  #       - gcc
-  #   override-build: |
-  #     make
+      "${CRAFT_PART_INSTALL}/usr/bin/grub-mkimage" -v -p efi -O  riscv64-efi                           \
+                                                   -c "${CRAFT_PART_INSTALL}/grub.builtin"             \
+                                                   -o "${CRAFT_PART_INSTALL}/grubriscv64.efi"          \
+                                                   -d "${CRAFT_PART_INSTALL}/usr/lib/grub/riscv64-efi" \
+                                                   ${GRUB_MODULES}
 
-  #     cp -f build/platform/generic/firmware/fw_payload.bin "${CRAFT_PART_INSTALL}/"
-
-  # spl:
-  #   after: [u-boot, opensbi]
-  #   plugin: make
-  #   source: https://github.com/starfive-tech/Tools
-  #   source-type: git
-  #   source-depth: 1
-  #   source-commit: 6067c32c4cc11749a503b0708d98d6d45022cc0c
-  #   build-packages:
-  #     - device-tree-compiler
-  #     - make
-  #   override-build: |
-  #     make -C spl_tool
-
-  #     install -Dm755 spl_tool/spl_tool "${CRAFT_PART_INSTALL}/"
-  #     cp -f uboot_its/visionfive2-uboot-fit-image.its "${CRAFT_PART_INSTALL}/"
-  #   override-stage: |
-  #     craftctl default
-
-  #     # Create the u-boot-spl.bin.normal.out and
-  #     # create the actual payload as a FIT image.
-  #     ./spl_tool --creat-splhdr --file "${CRAFT_STAGE}/u-boot-spl.bin"
-
-  #     # Belong in:
-  #     # /dev/mmcblk{0,1}p1, /dev/mtd0 (SPL)
-  #     # /dev/mmcblk{0,1}p2, /dev/mtd1 (FIT)
-
-  #     mkimage \
-  #       -A riscv \
-  #       -O u-boot \
-  #       -T firmware \
-  #       -f visionfive2-uboot-fit-image.its \
-  #       visionfive2_fw_payload.img
-
-  #     # cp -f u-boot-spl.bin.normal.out \
-  #           # visionfive2_fw_payload.img "${CRAFT_PRIME}/"
-  #   prime:
-  #     - u-boot-spl.bin.normal.out
-  #     - visionfive2_fw_payload.img
+      # uEnv.txt is a file that our u-boot binary will search for and source on
+      # boot. This file should launch our grubriscv64.efi binary and results in
+      # a fully automated boot process.
+    organize:
+      usr/share/doc/grub-efi-riscv64/:     licenses/grub-efi-riscv64/
+      usr/share/doc/grub-efi-riscv64-bin/: licenses/grub-efi-riscv64-bin/
+    stage:
+      - grub.conf
+      - grubriscv64.efi
+      - licenses/
+      - uEnv.txt
 
 hooks:
   prepare-device:
