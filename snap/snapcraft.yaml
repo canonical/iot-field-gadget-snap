@@ -28,8 +28,8 @@ summary: An Ubuntu Core gadget for the <platform>
 license: "CC-BY-SA-4.0 AND ..."
 # This repository is upstream for this gadget. Optionally include your contact
 # information.
-website: https://github.com/canonical/iot-field-kernel-snap
 issues: https://github.com/canonical/iot-field-kernel-snap/issues
+website: https://github.com/canonical/iot-field-gadget-snap/tree/main
 # The description should include boilerplate information and a description of
 # any nuances with this gadget target platform.
 # Always include license information.
