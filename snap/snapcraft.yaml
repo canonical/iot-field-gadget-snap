@@ -1,13 +1,30 @@
 name: nezha
-version: 22-1
-summary: Nezha board gadget
-description: |
-  Support files for booting the Nezha board
+adopt-info: u-boot
 base: core22
 type: gadget
+summary: An Ubuntu Core gadget for the RISC-V Allwinner Nezha
+description: |
+  This snap provides the u-boot and bootloader files for booting the RISC-V
+  AllWinner Nezha.
+
+  Additionally it includes the gadget.yaml which defines our partition layout
+  and any default configuration options for our Ubuntu Core device.
+
+  ** Note that the license information of this snap is incomplete **
+  Do your due diligence to ensure compliance with the licenses of the contents of this snap.
+
+  The boot.scr, gadget.yaml, and snapcraft.yaml are licensed under CC-BY-SA-4.0
+
+  You can find many licenses for the contents of this snap at the following locations:
+
+  All provided: licenses/
 
 confinement: strict
 grade: stable
+
+license: "Beerware AND BSD-2-Clause AND BSD-3-Clause AND CC-BY-SA-3.0 AND CC-BY-SA-4.0 AND GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.1"
+issues: https://github.com/canonical/iot-field-gadget-snap/issues
+website: https://github.com/canonical/iot-field-gadget-snap/tree/22-riscv64-nezha
 
 assumes: [kernel-assets]
 
@@ -19,42 +36,46 @@ parts:
   boot-scr:
     plugin: nil
     source: u-boot/
-    build-packages:
-      - u-boot-tools
+    build-packages: [u-boot-tools]
     override-build: |
       mkimage \
-        -T script \
         -C none \
-        -n 'Boot Script' \
+        -T script \
         -d boot.scr.in \
+        -n 'Boot Script' \
         ${CRAFT_PART_INSTALL}/boot.scr
-
-  boot0:
-    plugin: nil
-    stage-packages:
-      - nezha-boot0
-    organize:
-      usr/lib/u-boot/nezha/boot0_sdcard_sun20iw1p1.bin: boot0_sdcard_sun20iw1p1.bin
-    stage:
-      - boot0_sdcard_sun20iw1p1.bin
-
-  u-boot:
-    plugin: nil
-    stage-packages:
-      - u-boot-nezha
-    organize:
-      usr/lib/u-boot/nezha/u-boot.toc1: u-boot.toc1
-    stage:
-      - u-boot.toc1
 
   boot-sel:
     plugin: nil
-    build-packages:
-      - u-boot-tools
+    build-packages: [u-boot-tools]
     override-build: |
       mkenvimage -r -s 4096 -o ${CRAFT_PART_INSTALL}/boot.sel - < /dev/null
 
       touch ${CRAFT_PART_INSTALL}/uboot.conf
+
+  boot0:
+    plugin: nil
+    stage-packages: [nezha-boot0]
+    organize:
+      usr/lib/u-boot/nezha/boot0_sdcard_sun20iw1p1.bin: boot0_sdcard_sun20iw1p1.bin
+      usr/share/doc/nezha-boot0: licenses/nezha-boot0
+    stage:
+      - boot0_sdcard_sun20iw1p1.bin
+      - licenses/
+
+  u-boot:
+    plugin: nil
+    stage-packages: [u-boot-nezha]
+    override-build: |
+      craftctl set version=$(find "${CRAFT_PART_BUILD}/../stage_packages/" \
+                               -name u-boot-nezha_*.deb \
+                               -exec dpkg-deb -f {} Version \; | cut -d- -f1)
+    organize:
+      usr/lib/u-boot/nezha/u-boot.toc1: u-boot.toc1
+      usr/share/doc/u-boot-nezha: licenses/u-boot-nezha
+    stage:
+      - licenses/
+      - u-boot.toc1
 
 hooks:
   prepare-device:
