@@ -1,130 +1,92 @@
 # The Gadget Snap
 
-The gadget snap defines the structure & boot mechanisms of our device, amongst
-many other things. As such, this snap is also quite device specific.
+This gadget snap provides the boot assets required to boot the AllWinner Nezha.
 
-In this case, we are building u-boot to be carried as a payload for OpenSBI.
-From there, we hope to exec the system, whether it be to bootstrap Ubuntu Core
-or run as normal.
+Specifically, this gadget provides the u-boot binary and a GRUB binary which
+search for the relevant partition expected of an Ubuntu Core system, depending
+on if this is a fresh system with only a system-seed partition or an already
+existing system with an ubuntu-boot partition.
 
-Note that on Ubuntu systems, the `qemu-run` script provided by this repository
-utilizes the `u-boot` and `opensbi` files provided as deb packages, and so the
-artifacts built here go unused. On non-Ubuntu systems however, you will want to
-use `prime/fw_payload.bin` as the `bios` passed to Qemu.
+## Usage
 
-Much like the kernel, u-boot is very device specific. Modify
-`snap/snapcraft.yaml` as necessary for your device.
+Because this gadget uses GRUB to boot the kernel, it should behave very
+similarly to the reference gadget snaps maintained by Canonical. However,
+successfully building this image requires using a forked version of [snapd](https://github.com/dilyn-corner/snapd/tree/grub-riscv) 
+and [ubuntu-image](https://github.com/dilyn-corner/ubuntu-image/tree/grub-riscv), 
+respectively. This is because some of the GRUB assets provided by snapd need to
+be updated to support RISC-V systems, and ubuntu-image uses some snapd code to
+generate these assets at image build time. A PR to add these changes to upstream
+is forthcoming.
 
-Building:
+Also note that there are currently (as of March 29) no RISC-V64 core24 snaps
+published in the store, and you will have to provide your own! You can find
+a core24 base snap [here](https://github.com/snapcore/core-base), the `main`
+branch should enable you to build a core24 base.
 
-`snapcraft`
+I would recommend building all of these snaps natively; the only one that is
+easiest to cross-build is the gadget.
 
+## Building
 
-## Academic Information
+1) Build and install the ubuntu-image fork from above
+2) Build the snapd snap fork from above
+3) Build the core24 base snap from above
+3) build this snap (and the corresponding [kernel snap](https://github.com/canonical/iot-field-kernel-snap/tree/devel-riscv64-nezha))
+4) Create a model assertion (get inspiration from the [reference models](https://github.com/snapcore/models))
+5) Build your image:
 
-There are several different ways of building OpenSBI, the Supervisor Binary
-Interface for RISC-V (for more information, see [their project](https://github.com/riscv-software-src/opensbi)).
+```
+    ubuntu-image snap              \
+        --snap path/to/base/snap   \
+        --snap path/to/snapd/snap  \
+        --snap path/to/gadget/snap \
+        --snap path/to/kernel/snap \
+        path/to/your/model
+```
 
-1) `fw_jump.elf`
+6) Write that image to an SD card (note that sdX is your SD card, this command
+    is destructive to data):
 
-    Jumps to a specific location in memory and executes the object there
+```
+    dd if=nezha.img of=/dev/sdX bs=1M status=progress conv=fsync
+```
 
-2) `fw_payload.elf`
+7) Insert the SD card and boot the board
 
-    Executes a binary built into OpenSBI as a payload
+Some current issues prevent fully automated installation; see the next section
+for those issues and current workarounds.
 
-3) `fw_dynamic.elf`
+## Current issues
 
-    Determines how to proceed to the next bootloader at run-time
+- The boot process is not fully automated
 
-`fw_dynamic.elf` is used in cases where `u-boot.bin` is built in m-mode
-(`qemu-riscv64_spl_defconfig`). This is not our case here, so we will ignore it.
+Currently, one must enter the below in the u-boot console of the hardware via `screen`:
 
-`fw_jump.elf` is useful in cases where we want to execute some arbitrary program
-at a memory address; for all practical purposes, the thing we load is either
-Linux or u-boot. So we don't need this.
+```
+    load mmc 0:1 $kernel_addr_r /EFI/boot/grubriscv64.efi
+    bootefi $kernel_addr_r
+```
 
-`fw_payload.elf` is used when you know you want to execute the same payload
-every time. This is specifically useful when the boot stage prior to OpenSBI
-cannot execute *both* OpenSBI *and* the following boot stage. This is
-interesting to us (at least in the Qemu case).
-
-
-Therefore, we know that we must
-1) build u-boot in smode (`qemu-riscv64_smode_defconfig`)
-2) build OpenSBI with that `u-boot.bin` as `FW_PAYLOAD_PATH=/path/to/u-boot.bin`
-
-Thus, this gadget has two primary binaries which are built:
-1) u-boot.bin
-2) fw_payload.elf
-
-This is approximately all the knowledge required for us here.
-
-There are some additional files to consider.
-
-`boot.scr.in` file is processed at build-time to produce a set of
-instructions which `u-boot.bin` will execute at run-time.
-
-`gadget.yaml` defines the underlying structure of our Ubuntu Core image.
-
-`fitImage.its` is an optional file in our use case but can be relevant when we
-are using a u-boot built in M-mode (spl). This case will require a modified
-`snap/snapcraft.yaml` in which we build u-boot twice, once as a payload for
-OpenSBI and a second time as a binary containing that `fw_payload.elf`. This is
-potentially relevant on *real hardware*.
-
-
-## For Beginners
-
-If you are new to hardware enablement and board bring-up, welcome!
-
-Here are some good resources I found for RISC-V:
-
-[RISC-V bootflow, explained](https://crvf2019.github.io/pdf/43.pdf)
-
-[RISC-V bootflow (with examples!)](https://riscv.org/wp-content/uploads/2019/12/Summit_bootflow.pdf)
-
-[OpenSBI explainer](https://github.com/riscv-software-src/opensbi)
-
-[OpenSBI firmware explainer](https://github.com/riscv-software-src/opensbi/tree/master/docs/firmware)
-
-[Embedded Linux from Scratch](https://youtube.com/watch?v=cIkTh3Xp3dA)
-
-Some important things to know:
-
-1) There is high variation between boards. You will more than likely have to
-    tweak a few things to get your particular board working.
-
-2) Some boards simply aren't supported, whether by u-boot or the kernel
-    itself. The best way is to add support yourself. The easiest way is to
-    get someone else to do it for you.
-
-3) Given that you have to modify some files, what may they be?
-    * It's unlikely that you'll have to modify the `gadget.yaml` too much
-
-    * You'll have to use a different config than the one provided by
-      `u-boot/config`. Building u-boot is similar to building the kernel;
-      get the sources, do `make foo_defconfig` for your hardware,
-      `make menuconfig` to tweak.
-
-    * You'll have to tweak the addresses defined in `u-boot/boot.scr.in` -
-      these are very much specific to your board, as the amount of RAM
-      varies per device and what address `u-boot` reserves for itself can be
-      different. Useful tools in `u-boot` include `md`, `bdi`.
-
-Example: Qemu's virt board reserves all memory address prior to 0x80000000 (2G).
-Given a 2G machine, all available address are 0x80000000 to 0xffffffff. However,
-some of this memory is occupied; Qemu injects its device tree into OpenSBI on
-your behalf, and so a small portion of addressable space is already occupied by
-that. Just poke an address to see what's available. Your board's manual might
-also include some helpful information.
-
-4) Slight modifications will be needed for `snap/snapcraft.yaml`,
-    particularly to modify the `make foo_defconfig` invocation.
-
-Ultimately, it's a game of tweak-rebuild-reflash. Eventually, you'll get to the
-kernel. And from there, it's a whole new ball game.
+This is less than desirable; the earlier versions of this gadget used a
+`boot.scr` file which fully automated the boot process. An investigation will
+have to be done to determine what the u-boot binary in the archive expects to
+source during the boot process.
 
 
-If you have any questions, don't hesitate to ask (email)! If you identify an
-issue, make an issue. If you have something to add, open a PR!
+- Currently, no output is visible when allowing GRUB config to manage the boot process
+
+If one manually boots the kernel EFI binary at the GRUB prompt, kernel output
+can be seen. However, if the builtin GRUB configuration loads the grub.cfg
+from some partition, no output is seen. However, the boot process still occurs,
+resulting in a successfully installed Ubuntu Core system. Upon rebooting, the
+system won't be able to boot into the system in run mode.
+
+Currently, one can do the below:
+
+```
+    loopback loop /systems/<system name>/snaps/nezha-kernel_<version>.snap
+    chainloader (loop)/kernel.efi snapd_recovery_system=<system name> snapd_recovery_mode=install console=ttyS0 earlycon
+```
+
+The solution is somewhere in either the grub.builtin or in one of the snapd
+managed bootloader assets.
