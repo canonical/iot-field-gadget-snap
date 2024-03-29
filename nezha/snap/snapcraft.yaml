@@ -1,5 +1,13 @@
 name: nezha
 adopt-info: grub
+type: gadget
+base: core24
+build-base: devel
+grade: devel
+confinement: strict
+website: https://github.com/canonical/iot-field-gadget-snap
+issues: https://github.com/canonical/iot-field-gadget-snap/issues
+license: "Beerware AND BSD-2-Clause AND BSD-3-Clause AND CC-BY-SA-3.0 AND CC-BY-SA-4.0 AND GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.1 AND MIT"
 summary: An Ubuntu Core gadget for the RISC-V AllWinner Nezha
 description: |
   This snap provides the u-boot and GRUB binaries for booting the RISC-V
@@ -16,16 +24,6 @@ description: |
   You can find many licenses for the contents of this snap at the following locations:
 
   All provided: licenses/
-base: core24
-build-base: devel
-type: gadget
-
-grade: devel
-confinement: strict
-
-license: "Beerware AND BSD-2-Clause AND BSD-3-Clause AND CC-BY-SA-3.0 AND CC-BY-SA-4.0 AND GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.1 AND MIT"
-website: https://github.com/canonical/iot-field-kernel-snap
-issues: https://github.com/canonical/iot-field-kernel-snap/issues
 
 assumes: [kernel-assets]
 
@@ -141,7 +139,6 @@ parts:
       # testing, its existence on the 'loader1' partition of the Server
       # preinstalled image demonstrates that this file should work. Requires
       # further investigation.
-
     organize:
       usr/share/doc/grub-efi-riscv64/:     licenses/grub-efi-riscv64/
       usr/share/doc/grub-efi-riscv64-bin/: licenses/grub-efi-riscv64-bin/
