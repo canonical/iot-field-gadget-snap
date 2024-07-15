@@ -24,7 +24,7 @@ grade: stable
 confinement: strict
 # The summary should be short and simple.
 summary: An Ubuntu Core gadget for the <platform>
-# Again: always include license information.
+# Always include license information.
 # Valid licenses: https://github.com/snapcore/snapd/blob/master/spdx/licenses.go
 license: "CC-BY-SA-4.0 AND ..."
 # This repository is upstream for this gadget. Optionally include your contact
@@ -33,7 +33,6 @@ issues: https://github.com/canonical/iot-field-gadget-snap/issues
 website: https://github.com/canonical/iot-field-gadget-snap/tree/main
 # The description should include boilerplate information and a description of
 # any nuances with this gadget target platform.
-# Always include license information.
 description: |
   This snap provides the <bootloader> binaries for booting <platform>.
 
@@ -74,11 +73,10 @@ package-repositories:
 # people who are learning!
 parts:
   # If GRUB is specified as the bootloader in the gadget.yaml, then this
-  # grub part is what should be used. bootloader in the gadget.yaml. The grub
-  # part is used to fetch a GRUB binary from the Ubuntu archive. This package
-  # should provide us everything needed for a gadget which specifies GRUB as a
-  # bootloader. Additionally, the snap version information can be set from the
-  # GRUB package used.
+  # grub part is what should be used. The grub part is used to fetch a GRUB
+  # binary from the Ubuntu archive. This package should provide us everything
+  # needed for a gadget which specifies GRUB as a bootloader. Additionally, the
+  # snap version information can be set from the GRUB package used.
   # When the gadget uses GRUB, a file named grubenv will be created by snapd
   # during image build time in EFI/ubuntu and snapd will manage that file during
   # the lifetime of the device. This file is populated by snapd with important
