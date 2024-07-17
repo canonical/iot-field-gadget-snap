@@ -2,12 +2,6 @@ name: nezha
 adopt-info: grub
 type: gadget
 base: core24
-build-base: devel
-grade: devel
-confinement: strict
-website: https://github.com/canonical/iot-field-gadget-snap
-issues: https://github.com/canonical/iot-field-gadget-snap/issues
-license: "Beerware AND BSD-2-Clause AND BSD-3-Clause AND CC-BY-SA-3.0 AND CC-BY-SA-4.0 AND GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.1 AND MIT"
 summary: An Ubuntu Core gadget for the RISC-V AllWinner Nezha
 description: |
   This snap provides the u-boot and GRUB binaries for booting the RISC-V
@@ -25,11 +19,18 @@ description: |
 
   All provided: licenses/
 
+grade: devel
+confinement: strict
+
+issues: https://github.com/canonical/iot-field-gadget-snap/issues
+website: https://github.com/canonical/iot-field-gadget-snap
+license: "Beerware AND BSD-2-Clause AND BSD-3-Clause AND CC-BY-SA-3.0 AND CC-BY-SA-4.0 AND GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.1 AND MIT"
+
 assumes: [kernel-assets]
 
 platforms:
   riscv64:
-    build-on: [amd64, riscv64]
+    build-on:  [amd64, riscv64]
     build-for: [riscv64]
 
 # Provides GRUB and u-boot for target hardware
@@ -117,11 +118,11 @@ parts:
       # Ubuntu does not ship either a grub binary nor a signed binary+shim on
       # this architecture As a result, we have to build the binary ourselves.
       # Here are at least the more useful grub modules required for Ubuntu Core:
-      GRUB_MODULES="all_video boot cat chain configfile echo ext2 fat font \
-                    gettext gfxmenu gfxterm gfxterm_background gzio halt \
-                    jpeg keystatus loadenv loopback linux memdisk minicmd \
+      GRUB_MODULES="all_video boot cat chain configfile echo ext2 fat font  \
+                    gettext gfxmenu gfxterm gfxterm_background gzio halt    \
+                    jpeg keystatus loadenv loopback linux memdisk minicmd   \
                     normal part_gpt png reboot regexp search search_fs_uuid \
-                    search_fs_file search_label sleep squash4 test true video lsmmap"
+                    search_fs_file search_label sleep squash4 test true video"
 
       # grub.builtin is a GRUB cfg file that we embed in GRUB to automate
       # the booting process. It will search for a grub.cfg in the ubuntu-boot
