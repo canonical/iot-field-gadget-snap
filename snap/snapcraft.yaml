@@ -2,10 +2,10 @@ name: nezha
 adopt-info: grub
 type: gadget
 base: core24
-summary: An Ubuntu Core gadget for the RISC-V AllWinner Nezha
+summary: An Ubuntu Core gadget for the RISC-V AllWinner Nezha and Sipeed LicheeRV
 description: |
   This snap provides the u-boot and GRUB binaries for booting the RISC-V
-  AllWinner Nezha.
+  AllWinner Nezha and Sipeed LicheeRV.
 
   Additionally it includes the gadget.yaml which defines our partition layout
   and any default configuration options for our Ubuntu Core device.
@@ -43,51 +43,16 @@ package-repositories:
     url: http://ports.ubuntu.com/ubuntu-ports
 
 parts:
-  # Because our boot asset is different depending on our target hardware, we
-  # have to use a different gadget.yaml for either board. There is no good
-  # generic mechanism for changing your gadget.yaml on the fly, so the only
-  # effective mechanism for telegraphing this requirement across multiple parts
-  # to snapcraft is by creating some file in the project directory to be checked
-  # by each part to inform its behavior.
-  gadget:
-    plugin: nil
-    override-build: |
-      set +x
-      # For now, dirty $CRAFT_PROJECT_DIR. Need to find a cleaner solution.
-
-      count=$(find "${CRAFT_PROJECT_DIR}" -name "*.board" -maxdepth 1 -type f | wc -l)
-      if [ "*.board" = "\*.board" ] || [ $count != 1 ]; then
-        echo "This gadget snap builds for two different devices:"
-        echo "LicheeRV or Nezha"
-        echo "This snap will not build properly if you do not tell it which device to build for."
-        echo "Please create a file named 'licheerv.board' or 'nezha.board' (but not both)"
-        echo "in the root of the project directory and then restart the build :)"
-        exit 1
-      fi
-
-      _board=$(basename "${CRAFT_PROJECT_DIR}/"*.board)
-      ln -sf "${CRAFT_PROJECT_DIR}/gadgets/${_board%.*}.yaml" "${CRAFT_PROJECT_DIR}/gadget.yaml"
-
   # Grab the u-boot binary used to boot our hardware
-  # Note that the nezha and sipeed u-boot binaries are provided by the same deb
-  # package, but as separate files.
-  # This means that we will need to fetch the relevant binary for our specific
-  # board, so we will have two gadget snaps.
-  # This means that we will need two separate tracks for this gadget, one for
-  # nezha and one for sipeed, and that implies we will need tracks for each
-  # major base release for each of those boards. Gross.
-  # Ideally, we just ship each of these binaries as a component and the image
-  # builder selects which one to use at build time. That is TBD.
-  # For now, fetch use the correct asset based on a file in the build directory
-  # named <board>.board
+  # The Sipeed LicheeRV and Nezha hardware can actually boot from the same
+  # u-boot binary. It may be prudent in the future to determine why Canonical
+  # ships two different u-boot binaries for these boards.
   u-boot:
-    after: [gadget]
     plugin: nil
     stage-packages: [u-boot-nezha]
     override-build: |
-      _board=$(basename "${CRAFT_PROJECT_DIR}/"*.board)
-      install -Dm644 "${CRAFT_PART_INSTALL}/usr/lib/u-boot/${_board%.*}/u-boot-sunxi-with-spl.bin" \
-      "${CRAFT_PART_INSTALL}/${_board%.*}-boot0_sdcard_sun20iw1p1.bin"
+      install -Dm644 "${CRAFT_PART_INSTALL}/usr/lib/u-boot/nezha/u-boot-sunxi-with-spl.bin" \
+      "${CRAFT_PART_INSTALL}/nezha-boot0_sdcard_sun20iw1p1.bin"
 
     organize:
       usr/share/doc/u-boot-nezha/: licenses/u-boot-nezha/
@@ -108,7 +73,7 @@ parts:
         "${CRAFT_PART_INSTALL}/boot.scr"
 
   grub:
-    after: [gadget, u-boot]
+    after: [u-boot]
     plugin: dump
     source: grub/
     stage-packages:
