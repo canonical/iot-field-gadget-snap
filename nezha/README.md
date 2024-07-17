@@ -1,6 +1,7 @@
 # The Gadget Snap
 
-This gadget snap provides the boot assets required to boot the AllWinner Nezha.
+This gadget snap provides the boot assets required to boot the AllWinner Nezha
+and Sipeed LicheeRV.
 
 Specifically, this gadget provides the u-boot binary and a GRUB binary which
 search for the relevant partition expected of an Ubuntu Core system, depending
