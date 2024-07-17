@@ -29,9 +29,8 @@ easiest to cross-build is the gadget.
 
 ## Building
 
-1) Build and install the ubuntu-image fork from above
-2) Build the snapd snap fork from above
-3) Build the core24 base snap from above
+1) Build and install the ubuntu-image fork from above (`snapcraft`)
+2) Build the snapd snap fork from above (`snapcraft --remote-build --build-for riscv64`)
 3) build this snap (and the corresponding [kernel snap](https://github.com/canonical/iot-field-kernel-snap/tree/devel-riscv64-nezha))
 4) Create a model assertion (get inspiration from the [reference models](https://github.com/snapcore/models))
 5) Build your image:
