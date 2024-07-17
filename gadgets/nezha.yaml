@@ -18,6 +18,8 @@ volumes:
         # The size of the blob + some wiggle room for future size
         # increases and to make the size divisible by 512.
         size: 1048576
+        update:
+          edition: 1
         content:
           - image: nezha-boot0_sdcard_sun20iw1p1.bin
       - name: ubuntu-seed
@@ -26,6 +28,8 @@ volumes:
         type: C12A7328-F81F-11D2-BA4B-00A0C93EC93B
         size: 1200M
         offset: 40M
+        update:
+          edition: 1
         content:
           - source: grubriscv64.efi
             target: EFI/boot/grubriscv64.efi
@@ -38,6 +42,8 @@ volumes:
         filesystem: ext4
         type: 0FC63DAF-8483-4772-8E79-3D69D8477DE4
         size: 1200M
+        update:
+          edition: 1
         content:
           - source: grubriscv64.efi
             target: EFI/boot/grubriscv64.efi
