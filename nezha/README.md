@@ -16,12 +16,12 @@ and [ubuntu-image](https://github.com/dilyn-corner/ubuntu-image/tree/grub-riscv)
 respectively. This is because some of the GRUB assets provided by snapd need to
 be updated to support RISC-V systems, and ubuntu-image uses some snapd code to
 generate these assets at image build time. A PR to add these changes to upstream
-is forthcoming.
+can be tracked [here](https://github.com/snapcore/snapd/pull/14201).
 
-Also note that there are currently (as of March 29) no RISC-V64 core24 snaps
-published in the store, and you will have to provide your own! You can find
-a core24 base snap [here](https://github.com/snapcore/core-base), the `main`
-branch should enable you to build a core24 base.
+One can optionally add [console-conf](https://github.com/snapcore/console-conf-snap) 
+to the image, but having RISC-V versions of this snap available in the store is
+[blocked](https://github.com/snapcore/console-conf-snap/pull/29) on snapd 2.64
+being released for RISC-V to resolve an outstanding bug in snapd.
 
 I would recommend building all of these snaps natively; the only one that is
 easiest to cross-build is the gadget.
@@ -58,35 +58,19 @@ for those issues and current workarounds.
 
 ## Current issues
 
-- The boot process is not fully automated
+- No output is visible when allowing GRUB config to manage the boot process
 
-Currently, one must enter the below in the u-boot console of the hardware via `screen`:
-
-```
-    load mmc 0:1 $kernel_addr_r /EFI/boot/grubriscv64.efi
-    bootefi $kernel_addr_r
-```
-
-This is less than desirable; the earlier versions of this gadget used a
-`boot.scr` file which fully automated the boot process. An investigation will
-have to be done to determine what the u-boot binary in the archive expects to
-source during the boot process.
-
-
-- Currently, no output is visible when allowing GRUB config to manage the boot process
-
-If one manually boots the kernel EFI binary at the GRUB prompt, kernel output
-can be seen. However, if the builtin GRUB configuration loads the grub.cfg
-from some partition, no output is seen. However, the boot process still occurs,
-resulting in a successfully installed Ubuntu Core system. Upon rebooting, the
-system won't be able to boot into the system in run mode.
-
-Currently, one can do the below:
+For some reason unknown to the author, the `snapd_full_cmdline_args` value in
+`systems/<date>/grubenv` is improperly generated; it uses the amd64 snippet
+instead of the riscv64 snippet it *should* be using. A workaround exists:
 
 ```
-    loopback loop /systems/<system name>/snaps/nezha-kernel_<version>.snap
-    chainloader (loop)/kernel.efi snapd_recovery_system=<system name> snapd_recovery_mode=install console=ttyS0 earlycon
+    sudo partx -av nezha.img
+    sudo mount /dev/loopXXp1 /mnt
+    # Modify the snapd_full_cmdline_args line to read 'console=ttyS0,115200n8
+    #   earlycon panic=-1' and delete five # marks
+    sudo umount /mnt
+    sudo partx -d /dev/loopXX
 ```
 
-The solution is somewhere in either the grub.builtin or in one of the snapd
-managed bootloader assets.
+This will result in full boot output on the serial device output of the device.
