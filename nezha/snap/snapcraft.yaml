@@ -100,14 +100,12 @@ parts:
     plugin: dump
     source: grub/
     stage-packages:
-      # TODO: some bug; CRAFT_ARCH_BUILD_FOR isn't set correctly in rev 11178
-      - grub-efi-riscv64:riscv64
+      - grub-efi-${CRAFT_ARCH_BUILD_FOR}:${CRAFT_ARCH_BUILD_FOR}
     override-build: |
       craftctl default
       
-      # TODO: some bug; CRAFT_ARCH_BUILD_FOR isn't set correctly in rev 11178
       craftctl set version=$(find "${CRAFT_PART_BUILD}/../stage_packages/" \
-                              -name grub-efi-riscv64_*.deb \
+                              -name grub-efi-${CRAFT_ARCH_BUILD_FOR}_*.deb \
                               -exec dpkg-deb -f {} Version \;)
 
       # grub.conf is required when bootloader is set to GRUB in the gadget.yaml
@@ -144,11 +142,11 @@ parts:
       # preinstalled image demonstrates that this file should work. Requires
       # further investigation.
     organize:
-      usr/share/doc/grub-efi-riscv64/:     licenses/grub-efi-riscv64/
-      usr/share/doc/grub-efi-riscv64-bin/: licenses/grub-efi-riscv64-bin/
+      usr/share/doc/grub-efi-${CRAFT_ARCH_BUILD_FOR}/:     licenses/grub-efi-${CRAFT_ARCH_BUILD_FOR}/
+      usr/share/doc/grub-efi-${CRAFT_ARCH_BUILD_FOR}-bin/: licenses/grub-efi-${CRAFT_ARCH_BUILD_FOR}-bin/
     stage:
       - grub.conf
-      - grubriscv64.efi
+      - grub${CRAFT_ARCH_BUILD_FOR}.efi
       - licenses/
       - uEnv.txt
 
