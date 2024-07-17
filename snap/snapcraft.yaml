@@ -13,7 +13,7 @@ description: |
   ** Note that the license information of this snap is incomplete **
   Do your due diligence to ensure compliance with the licenses of the contents of this snap.
 
-  The uEnv.txt, gadget.yaml, grub.builtin, and snapcraft.yaml are licensed under CC-BY-SA-4.0
+  The boot.scr.in, gadget.yaml, grub.builtin, and snapcraft.yaml are licensed under CC-BY-SA-4.0
 
   You can find many licenses for the contents of this snap at the following locations:
 
@@ -95,6 +95,18 @@ parts:
       - "*.bin"
       - licenses/
 
+  boot-scr:
+    plugin: nil
+    source: u-boot/
+    build-packages: [u-boot-tools]
+    override-build: |
+      mkimage \
+        -C none \
+        -T script \
+        -d boot.scr.in \
+        -n 'Boot Script' \
+        "${CRAFT_PART_INSTALL}/boot.scr"
+
   grub:
     after: [gadget, u-boot]
     plugin: dump
@@ -128,19 +140,12 @@ parts:
       # partition. Both of these assets are controlled by snapd because we
       # select GRUB as our bootloader.
 
-      "${CRAFT_PART_INSTALL}/usr/bin/grub-mkimage" -v -p efi -O  riscv64-efi                           \
-                                                   -c "${CRAFT_PART_INSTALL}/grub.builtin"             \
-                                                   -o "${CRAFT_PART_INSTALL}/grubriscv64.efi"          \
-                                                   -d "${CRAFT_PART_INSTALL}/usr/lib/grub/riscv64-efi" \
-                                                   ${GRUB_MODULES}
+      "${CRAFT_PART_INSTALL}/usr/bin/grub-mkimage" -v -p efi                   \
+        -O ${CRAFT_ARCH_BUILD_FOR}-efi -c "${CRAFT_PART_INSTALL}/grub.builtin" \
+        -o "${CRAFT_PART_INSTALL}/grub${CRAFT_ARCH_BUILD_FOR}.efi"             \
+        -d "${CRAFT_PART_INSTALL}/usr/lib/grub/${CRAFT_ARCH_BUILD_FOR}-efi"    \
+        ${GRUB_MODULES}
 
-      # uEnv.txt is a file that our u-boot binary will search for and source on
-      # boot. This file should launch our grubriscv64.efi binary and results in
-      # a fully automated boot process.
-      # NOTE: currently, uEnv.txt does not work when booting Core. After
-      # testing, its existence on the 'loader1' partition of the Server
-      # preinstalled image demonstrates that this file should work. Requires
-      # further investigation.
     organize:
       usr/share/doc/grub-efi-${CRAFT_ARCH_BUILD_FOR}/:     licenses/grub-efi-${CRAFT_ARCH_BUILD_FOR}/
       usr/share/doc/grub-efi-${CRAFT_ARCH_BUILD_FOR}-bin/: licenses/grub-efi-${CRAFT_ARCH_BUILD_FOR}-bin/
@@ -148,7 +153,6 @@ parts:
       - grub.conf
       - grub${CRAFT_ARCH_BUILD_FOR}.efi
       - licenses/
-      - uEnv.txt
 
 hooks:
   prepare-device:
