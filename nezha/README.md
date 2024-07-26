@@ -24,8 +24,6 @@ to the image, but having RISC-V versions of this snap available in the store is
 [blocked](https://github.com/snapcore/console-conf-snap/pull/29) on snapd 2.64
 being released for RISC-V to resolve an outstanding bug in snapd.
 
-I would recommend building all of these snaps natively; the only one that is
-easiest to cross-build is the gadget.
 
 ## Building
 
