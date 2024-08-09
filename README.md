@@ -35,7 +35,6 @@ being released for RISC-V to resolve an outstanding bug in snapd.
 
 ```
     ubuntu-image snap              \
-        --snap path/to/base/snap   \
         --snap path/to/snapd/snap  \
         --snap path/to/gadget/snap \
         --snap path/to/kernel/snap \
