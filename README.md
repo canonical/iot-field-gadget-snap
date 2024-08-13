@@ -128,11 +128,19 @@ u-boot env.
 
 ### General runtime
 
-There are a few handy tools available when it comes to debugging the general runtime of your Ubuntu Core system. If you're doing a board bringup on some hardware for the first time, having this tricks available can dramatically improve your success rates.
+There are a few handy tools available when it comes to debugging the general
+runtime of your Ubuntu Core system. If you're doing a board bringup on some
+hardware for the first time, having this tricks available can dramatically
+improve your success rates.
 
-One primary tool for improving the debugability of your Ubuntu Core image is extending the kernel commandline parameters, as these allow you to directly tell snapd and systemd how to handle the boot process without mangling your initrd or userspace. The gadget snap is a prime place for doing this work, as part of its job is adding kernel commandline arguments to the boot process!
+One primary tool for improving the debugability of your Ubuntu Core image is
+extending the kernel commandline parameters, as these allow you to directly tell
+snapd and systemd how to handle the boot process without mangling your initrd or
+userspace. The gadget snap is a prime place for doing this work, as part of its
+job is adding kernel commandline arguments to the boot process!
 
-Here are some useful kernel commandline options, some Ubuntu Core specific and others generally applicable:
+Here are some useful kernel commandline options, some Ubuntu Core specific and
+others generally applicable:
 
 | Argument                               | Effect                                         |
 | -------------------------------------- | ---------------------------------------------- |
