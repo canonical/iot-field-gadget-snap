@@ -2,10 +2,10 @@ name: nezha
 adopt-info: u-boot
 base: core22
 type: gadget
-summary: An Ubuntu Core gadget for the RISC-V Allwinner Nezha
+summary: An Ubuntu Core gadget for the RISC-V Allwinner Nezha and Sipeed LicheeRV
 description: |
   This snap provides the u-boot and bootloader files for booting the RISC-V
-  AllWinner Nezha.
+  AllWinner Nezha and Sipeed LicheeRV.
 
   Additionally it includes the gadget.yaml which defines our partition layout
   and any default configuration options for our Ubuntu Core device.
