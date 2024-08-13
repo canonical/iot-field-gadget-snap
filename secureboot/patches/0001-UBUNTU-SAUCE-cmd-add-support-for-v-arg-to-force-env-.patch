@@ -1,0 +1,53 @@
+From 0a8ed8b073f2bd7c14410ad0aa9fb9225128882d Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Tue, 20 Apr 2021 12:42:56 +0100
+Subject: [PATCH 01/20] UBUNTU: SAUCE: cmd: add support for -v arg to force env
+ validation for env import function
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ cmd/nvedit.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/cmd/nvedit.c b/cmd/nvedit.c
+index b5a8cb825ab..5d0c84008ca 100644
+--- a/cmd/nvedit.c
++++ b/cmd/nvedit.c
+@@ -886,6 +886,7 @@ sep_err:
+  *		for line endings. Only effective in addition to -t.
+  *	-b:	assume binary format ('\0' separated, "\0\0" terminated)
+  *	-c:	assume checksum protected environment format
++ *	-v:	validate if there's any space character in values.
+  *	addr:	memory address to read from
+  *	size:	length of input data; if missing, proper '\0'
+  *		termination is mandatory
+@@ -906,6 +907,7 @@ static int do_env_import(struct cmd_tbl *cmdtp, int flag,
+ 	int	del = 0;
+ 	int	crlf_is_lf = 0;
+ 	int	wl = 0;
++	int	validate = 0;
+ 	size_t	size;
+ 
+ 	cmd = *argv;
+@@ -936,6 +938,9 @@ static int do_env_import(struct cmd_tbl *cmdtp, int flag,
+ 			case 'd':
+ 				del = 1;
+ 				break;
++			case 'v':		/* validate variables */
++				validate = 1;
++				break;
+ 			default:
+ 				return CMD_RET_USAGE;
+ 			}
+@@ -1001,7 +1006,7 @@ static int do_env_import(struct cmd_tbl *cmdtp, int flag,
+ 	}
+ 
+ 	if (!himport_r(&env_htab, ptr, size, sep, del ? 0 : H_NOCLEAR,
+-		       crlf_is_lf, wl ? argc - 2 : 0, wl ? &argv[2] : NULL, 0)) {
++		       crlf_is_lf, wl ? argc - 2 : 0, wl ? &argv[2] : NULL, validate)) {
+ 		pr_err("## Error: Environment import failed: errno = %d\n",
+ 		       errno);
+ 		return 1;
+-- 
+2.40.1
+

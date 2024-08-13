@@ -1,0 +1,198 @@
+# The below are a collection of things to add to the `parts` node of the snapcraft.yaml
+
+apps:
+  # Provides the runtime TEE to the system
+  tee-supplicant:
+    command: usr/sbin/tee-supplicant --fs-parent-path $SNAP_SAVE_DATA/optee-fs --ta-dir $SNAP_COMMON/lib/optee_armtz --plugin-path $SNAP_COMMON/usr/lib/tee-supplicant/plugins
+    install-mode: disable
+    daemon: simple
+    plugs: [network-bind, tee]
+
+  # Exposes the P11 Kit helpers
+  p11-kit-servers:
+    command: usr/bin/p11-kit-servers start
+    stop-command: usr/bin/p11-kit-servers stop
+    daemon: forking
+    install-mode: disable
+    plugs: [tee]
+    slots: [pkcs11-optee-slot-0, pkcs11-optee-slot-1, pkcs11-optee-slot-2]
+
+  # Exposes the P11 Kit helpers
+  p11tool-optee:
+    command: usr/bin/p11tool --provider $SNAP/usr/lib/aarch64-linux-gnu/libckteec.so
+    plugs: [home, pkcs11, tee]
+
+  # Exposes the P11 Kit helpers
+  pkcs11-tool-optee:
+    command: usr/bin/pkcs11-tool --module $SNAP/usr/lib/aarch64-linux-gnu/libckteec.so
+    plugs: [home, pkcs11, tee]
+
+parts:
+  # Some relevant public key information.
+  # Refer to the README for details.
+  pub-signing-key:
+    plugin: dump
+    source: https://git.launchpad.net/~ondrak/+git/dev-keys
+    source-type: git
+    source-branch: master
+    source-depth: 1
+    stage:
+      - u-boot-pubkey.dtsi
+    prime:
+      - -*
+
+  # The ARM Trusted Firmware (ATF) is used in the case of ARM hardware
+  arm-trusted-firmware:
+    plugin: nil
+    source: https://github.com/nxp-imx/imx-atf.git
+    source-type: git
+    source-tag: lf-6.6.23-2.0.0
+    source-depth: 1
+    build-environment:
+      - PLAT: "imx8mm"
+      - CROSS_COMPILE: "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-"
+    override-build: |
+      make \
+        PLAT=${PLAT} \
+        BUILD_BASE=${CRAFT_PART_BUILD}/build \
+        bl31 \
+        -j$(nproc)
+
+      make \
+        PLAT=${PLAT} \
+        BUILD_BASE=${CRAFT_PART_BUILD}/build-optee \
+        SPD=opteed \
+        bl31 \
+        -j$(nproc)
+
+      cp ${CRAFT_PART_BUILD}/build/${PLAT}/release/bl31.bin       \
+         ${CRAFT_PART_INSTALL}/bl31-${PLAT}.bin
+      cp ${CRAFT_PART_BUILD}/build-optee/${PLAT}/release/bl31.bin \
+         ${CRAFT_PART_INSTALL}/bl31-${PLAT}.bin-optee
+    prime:
+      - -*
+
+  # Developer keys to use for signing.
+  # Use proper PRIVATE and SECRET keys.
+  optee-keys:
+    plugin: dump
+    source: https://git.launchpad.net/~ondrak/+git/dev-keys
+    source-type: git
+    source-branch: ta-keys
+    source-depth: 1
+    organize:
+      '*': ta-keys/
+    prime:
+      - -*
+
+  # The official OP-TEE client application
+  optee-client:
+    plugin: make
+    source: https://github.com/OP-TEE/optee_client.git
+    source-type: git
+    source-tag: 4.2.0
+    source-depth: 1
+    make-parameters:
+      - ARCH="arm64"
+      - DEBUG=0
+      - CROSS_COMPILE="${CRAFT_ARCH_TRIPLET_BUILD_FOR}-"
+      - CFG_TEE_CLIENT_LOAD_PATH="/"
+      - CFG_TA_TEST_PATH=n
+      - CFG_TEE_SUPP_LOG_LEVEL=0
+      - SBINDIR=/usr/sbin
+      - LIBDIR=/usr/lib/${CRAFT_ARCH_TRIPLET_BUILD_FOR}
+    stage:
+      - usr/sbin
+      - usr/lib/*/lib*so*
+
+  # The reference implementation for enabling FDE on Ubuntu Core.
+  # Refer to the README for details.
+  optee-fde:
+    plugin: dump
+    source: https://git.launchpad.net/~ondrak/+git/optee-uc-fde
+    source-type: git
+    source-branch: master
+    source-depth: 1
+    organize:
+      '*': optee-fde/
+    prime:
+      - -*
+
+  # The official OP-TEE OS for the i.MX platform
+  optee-os:
+    after: [optee-fde, optee-keys]
+    plugin: nil
+    source: https://github.com/nxp-imx/imx-optee-os.git
+    source-type: git
+    source-tag: lf-6.6.23-2.0.0
+    source-depth: 1
+    build-environment:
+      - ARCH: "arm"
+      - CROSS_COMPILE: "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-"
+      - CROSS_COMPILE_core: "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-"
+      - CROSS_COMPILE_ta_arm64: "${CRAFT_ARCH_TRIPLET_BUILD_FOR}-"
+      - CFG_ARM64_core: "y"
+      - CFG_USER_TA_TARGETS: "ta_arm64"
+      - CFG_TEE_CORE_LOG_LEVEL: "1"
+      - CFG_TEE_TA_LOG_LEVEL: "1"
+      - CFG_TEE_BENCHMARK: "n"
+      - CFG_TEE_CORE_DEBUG: "n"
+      - CFG_TEE_RAM_VA_SIZE: "0x00280000"
+      - CFG_CORE_HEAP_SIZE: "0x00100000"
+      - DEBUG: "1"
+      - TA_PUBLIC_KEY: "${CRAFT_STAGE}/ta-keys/ta_public.pem"
+      - PLATFORM: "imx"
+      - PLATFORM_FLAVOR: "mx8mmevk"
+    override-build: |
+      # add optee-fde TA
+      cp -r ${CRAFT_STAGE}/optee-fde/ta/fde_key_handler ${CRAFT_PART_BUILD}/ta/
+      export OPTEE_VERSION=$(head -1 CHANGELOG.md  | sed 's/# OP-TEE - version \(.*\) (.*/\1/g')-imx
+      make O=${CRAFT_PART_BUILD}/out -j$(nproc)
+      # build again with early TAs
+      make O=${CRAFT_PART_BUILD}/out -j$(nproc) \
+         CFG_EARLY_TA=y \
+         EARLY_TA_PATHS="out/ta/pkcs11/fd02c9da-306c-48c7-a49c-bbd827ae86ee.stripped.elf \
+                 out/ta/trusted_keys/f04a0fe7-1f5d-4b9b-abf7-619b85b4ce8c.stripped.elf \
+                 out/ta/fde_key_handler/fd1b2a86-3668-11eb-adc1-0242ac120002.stripped.elf"
+      ${CRAFT_ARCH_TRIPLET_BUILD_FOR}-objcopy \
+         -O binary \
+         ${CRAFT_PART_BUILD}/out/core/tee.elf \
+         ${CRAFT_PART_INSTALL}/tee.bin
+    prime:
+      - -*
+
+  # P11 Kit helper scripts to handle P11 Kit providers for OP-TEE
+  p11-kit-helpers:
+    plugin: nil
+    source: pkcs/
+    override-build: |
+      install -D -m 755 \
+      ${CRAFT_PROJECT_DIR}/p11-kit-servers \
+      ${CRAFT_PART_INSTALL}/usr/bin/p11-kit-servers
+      install -D -m 755 \
+      ${CRAFT_PROJECT_DIR}/p11tool \
+      ${CRAFT_PART_INSTALL}/usr/bin/p11tool
+      install -D -m 755 \
+      ${CRAFT_PROJECT_DIR}/pkcs11-tool \
+      ${CRAFT_PART_INSTALL}/usr/bin/pkcs11-tool
+
+slots:
+  # The respective plugs should be provided by some kernel snap.
+  tee-plugins:
+    interface: content
+    write:
+      - $SNAP_COMMON/usr/lib/tee-supplicant/plugins
+  tee-tas:
+    interface: content
+    write:
+      - $SNAP_COMMON/lib/optee_armtz
+  # The respective plugs are declared by the p11kit-servers app
+  pkcs11-optee-slot-0:
+    interface: pkcs11
+    pkcs11-socket: /run/p11-kit/optee-slot-0
+  pkcs11-optee-slot-1:
+    interface: pkcs11
+    pkcs11-socket: /run/p11-kit/optee-slot-1
+  pkcs11-optee-slot-2:
+    interface: pkcs11
+    pkcs11-socket: /run/p11-kit/optee-slot-2

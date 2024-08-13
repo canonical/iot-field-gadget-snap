@@ -1,0 +1,33 @@
+From 5dc0f355f0eb6ab69f2e409d81bbdbef45d3f945 Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Sat, 6 Jan 2024 00:54:16 +0000
+Subject: [PATCH 20/20] UBUNTU: SAUCE: include: configs: imx8mm_evk: increase
+ max ramdisk size
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ include/configs/imx8mm_evk.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/include/configs/imx8mm_evk.h b/include/configs/imx8mm_evk.h
+index 3c19885dfa8..1e8ff7eff9a 100644
+--- a/include/configs/imx8mm_evk.h
++++ b/include/configs/imx8mm_evk.h
+@@ -108,11 +108,11 @@
+ 	"fitloadaddr=0x45000000\0" \
+ 	"splashimage=0x50000000\0" \
+ 	"console=ttymxc1,115200\0" \
+-	"fdt_addr_r=0x43000000\0"			\
+-	"fdt_addr=0x43000000\0"			\
++	"fdt_addr_r=0x42500000\0"			\
++	"fdt_addr=0x42500000\0"			\
+ 	"fdt_high=0xffffffffffffffff\0"		\
+ 	"fdt_file="__stringify(CONFIG_DEFAULT_FDT_FILE)"\0" \
+-	"initrd_addr=0x43800000\0"		\
++	"initrd_addr=0x42580000\0"		\
+ 	"initrd_high=0xffffffffffffffff\0" \
+ 	"mmcdev="__stringify(CONFIG_SYS_MMC_ENV_DEV)"\0" \
+ 	"mmcpart="__stringify(CONFIG_SYS_MMC_IMG_LOAD_PART)"\0" \
+-- 
+2.40.1
+

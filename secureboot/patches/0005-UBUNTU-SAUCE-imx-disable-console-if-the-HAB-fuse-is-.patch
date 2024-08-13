@@ -1,0 +1,79 @@
+From 9cb4f3e3d2e3b850e1a2390df60a3f9e84cec7a4 Mon Sep 17 00:00:00 2001
+From: Isaac True <isaac.true@canonical.com>
+Date: Wed, 30 Mar 2022 16:51:08 +0200
+Subject: [PATCH 05/20] UBUNTU: SAUCE: imx: disable console if the HAB fuse is
+ blown
+
+Signed-off-by: Isaac True <isaac.true@canonical.com>
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ arch/arm/include/asm/mach-imx/boot_mode.h |  1 +
+ arch/arm/mach-imx/Kconfig                 |  1 +
+ arch/arm/mach-imx/init.c                  | 23 +++++++++++++++++++++++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/arch/arm/include/asm/mach-imx/boot_mode.h b/arch/arm/include/asm/mach-imx/boot_mode.h
+index 856581b97a9..69d9d6f2172 100644
+--- a/arch/arm/include/asm/mach-imx/boot_mode.h
++++ b/arch/arm/include/asm/mach-imx/boot_mode.h
+@@ -49,6 +49,7 @@ struct boot_mode {
+ 	unsigned cfg_val;
+ };
+ 
++void imx_hab_disable_console(void);
+ void add_board_boot_modes(const struct boot_mode *p);
+ void boot_mode_apply(unsigned cfg_val);
+ extern const struct boot_mode soc_boot_modes[];
+diff --git a/arch/arm/mach-imx/Kconfig b/arch/arm/mach-imx/Kconfig
+index e9b7b54fb52..fbe08eac3e7 100644
+--- a/arch/arm/mach-imx/Kconfig
++++ b/arch/arm/mach-imx/Kconfig
+@@ -80,6 +80,7 @@ config IMX_HAB
+ 	select FSL_CAAM if HAS_CAAM
+ 	imply CMD_DEKBLOB if HAS_CAAM
+ 	imply CMD_PROVISION_KEY if HAS_CAAM
++	imply DISABLE_CONSOLE
+ 	help
+ 	  This option enables the support for secure boot (HAB).
+ 	  See doc/imx/habv4/* for more details.
+diff --git a/arch/arm/mach-imx/init.c b/arch/arm/mach-imx/init.c
+index ce3eb4b0b8a..7e25a6cc760 100644
+--- a/arch/arm/mach-imx/init.c
++++ b/arch/arm/mach-imx/init.c
+@@ -10,6 +10,13 @@
+ #include <asm/mach-imx/boot_mode.h>
+ #include <asm/arch/crm_regs.h>
+ 
++#ifdef CONFIG_IMX_HAB
++#include <asm/global_data.h>
++#include <asm/mach-imx/hab.h>
++
++DECLARE_GLOBAL_DATA_PTR;
++#endif
++
+ void init_aips(void)
+ {
+ 	struct aipstz_regs *aips1, *aips2, *aips3;
+@@ -138,3 +145,19 @@ u32 imx6_src_get_boot_mode(void)
+ 		return readl(&src_base->sbmr1);
+ }
+ #endif
++
++void imx_hab_disable_console(void) {
++#ifdef CONFIG_IMX_HAB
++	if (imx_hab_is_enabled()) {
++		gd->flags |= GD_FLG_DISABLE_CONSOLE;
++	} else {
++		puts(" Device is unlocked; enabling shell");
++	}
++#endif
++}
++
++#if !defined(CONFIG_SYS_BOARD)
++int board_early_init_f(void) {
++	imx_hab_disable_console();
++}
++#endif
+-- 
+2.40.1
+

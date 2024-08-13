@@ -1,0 +1,33 @@
+From 9730ec920a10ca222ea3197b624a29b6860657da Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Tue, 20 Apr 2021 18:38:48 +0100
+Subject: [PATCH 10/20] UBUNTU: SAUCE: include: configs: imx8mm_evk: boot fit
+ image
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ include/configs/imx8mm_evk.h | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/configs/imx8mm_evk.h b/include/configs/imx8mm_evk.h
+index fd6014829fc..3c19885dfa8 100644
+--- a/include/configs/imx8mm_evk.h
++++ b/include/configs/imx8mm_evk.h
+@@ -100,11 +100,12 @@
+ 	JAILHOUSE_ENV \
+ 	SR_IR_V2_COMMAND \
+ 	UBUNTU_ENV_DEFAULT \
+-	UBUNTU_ENV_LOAD_BOOT_FILES \
++	UBUNTU_ENV_LOAD_FIT_BOOT_FILES \
+ 	"mmc_seed_part=1\0" \
+ 	"mmc_boot_part=2\0" \
+ 	"devtype=mmc\0" \
+-	"boot_uc=run load_uc;booti ${loadaddr} ${initrd_addr}:${initrd_size} ${fdt_addr}\0" \
++	"boot_uc=run load_uc;bootm ${fitloadaddr}#${fdt_file}\0" \
++	"fitloadaddr=0x45000000\0" \
+ 	"splashimage=0x50000000\0" \
+ 	"console=ttymxc1,115200\0" \
+ 	"fdt_addr_r=0x43000000\0"			\
+-- 
+2.40.1
+

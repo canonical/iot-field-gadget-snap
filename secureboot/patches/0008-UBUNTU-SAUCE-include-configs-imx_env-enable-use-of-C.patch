@@ -1,0 +1,40 @@
+From 49a40ef9dfa76d6af20747587ac45feaf924a98a Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Wed, 27 Apr 2022 13:55:00 +0100
+Subject: [PATCH 08/20] UBUNTU: SAUCE: include: configs: imx_env: enable use of
+ CONFIG_EXTRA_BOOTARGS for uc boot
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ include/configs/imx_env.h | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/include/configs/imx_env.h b/include/configs/imx_env.h
+index 925f37d80d4..cca4419274e 100644
+--- a/include/configs/imx_env.h
++++ b/include/configs/imx_env.h
+@@ -109,6 +109,12 @@
+   #define UBUNTU_ENV_LOAD_FIT_BOOT_FILES \
+     "loadfiles=load ${devtype} ${mmcdev}:${kernel_bootpart} ${fitloadaddr} ${kernel_prefix}/${kernel_filename}\0"
+ 
++#ifdef  CONFIG_USE_BOOTARGS
++#define UC_EXTRA_BOOTARGS " " CONFIG_BOOTARGS
++#else
++#define UC_EXTRA_BOOTARGS
++#endif
++
+ #define UBUNTU_ENV_DEFAULT \
+   "kernel_filename=kernel.img\0" \
+   "initrd_filename=initrd.img\0" \
+@@ -116,7 +122,7 @@
+   "kernel_vars=snap_kernel snap_try_kernel kernel_status\0" \
+   "recovery_vars=snapd_recovery_mode snapd_recovery_system snapd_recovery_kernel\0" \
+   "snapd_recovery_mode=install\0" \
+-  "snapd_standard_params=systemd.gpt_auto=0 rd.systemd.unit=basic.target\0" \
++  "snapd_standard_params=systemd.gpt_auto=0" UC_EXTRA_BOOTARGS "\0" \
+   UBUNTU_ENV_LOAD_BOOT_CONFIG
+ 
+ #endif
+-- 
+2.40.1
+

@@ -1,0 +1,105 @@
+#!/bin/bash
+
+## determine host arch
+case ${SNAP_ARCH} in
+  arm64)
+    arch_triplet="aarch64-linux-gnu"
+    ;;
+  armhf)
+    arch_triplet="arm-linux-gnueabihf"
+    ;;
+  amd64)
+    arch_triplet="x86_64-linux-gnu"
+    ;;
+esac
+
+## Providers and their user friendly names
+## pkcs11_providers[<provider name>]=<provider library>
+## Automatically created p11 server unix sockets have following name
+## /run/p11-kit/<provider name>-slot-<slot token>
+## e.g. /run/p11-kit/optee-slot-0
+
+unset pkcs11_providers
+declare -A pkcs11_providers
+# optee
+pkcs11_providers["optee"]="${SNAP}/usr/lib/${arch_triplet}/libckteec.so"
+# MicrochipTech (ATECC 508/608)
+pkcs11_providers["atecc"]="${SNAP}/usr/lib/${arch_triplet}/libcryptoauth.so"
+# SmartCard
+pkcs11_providers["sc"]="${SNAP}/usr/lib/${arch_triplet}/opensc-pkcs11.so"
+# tpm
+pkcs11_providers["tpm"]="${SNAP}/usr/lib/${arch_triplet}/libtpm2_pkcs11.so.1"
+
+
+## unix socket dir and base socket names
+run_p11_kit_dir="/run/p11-kit"
+p11_kit_server_socket_base="${run_p11_kit_dir}"
+p11_kit_server_env_base="/tmp/pkcs11"
+
+
+## start p11-kit server for all the slots/tokens on given provider
+start_p11_kit_servers_for_provider() {
+  local provider_name="${1}"
+  local provider="${2}"
+  local token_num="0"
+
+  # spin servers for each tokens in this provider
+  for t in $(/usr/bin/p11tool --provider ${provider} --list-token-urls | sed 's/;token=.*//g')
+  do
+    local socket_name=${provider_name}-slot-${token_num}
+    logger "p11-kit server --provider ${provider} --name ${p11_kit_server_socket_base}/${socket_name} ${t}"
+    /usr/bin/p11-kit server \
+      --provider ${provider} \
+      --name ${p11_kit_server_socket_base}/${socket_name} \
+      "${t}" > \
+      ${p11_kit_server_env_base}-${socket_name}.env
+    token_num=$((token_num+1))
+  done
+}
+
+## start p11-kit server for all the available tokens
+start_p11_kit_servers() {
+  mkdir -p ${run_p11_kit_dir}
+  # always try to stop any dangling servers first
+  stop_p11_kit_servers
+
+  # loop through all providers
+  for p in "${!pkcs11_providers[@]}"
+  do
+    logger "Handling provider: ${p}"
+    # sanity check if provider library exists
+    if [ -e ${pkcs11_providers[${p}]} ]; then
+      start_p11_kit_servers_for_provider ${p} ${pkcs11_providers[${p}]}
+    fi
+  done
+}
+
+## stop all running p11-kit servers
+stop_p11_kit_servers() {
+  # all the running servers info is stored in *.env files
+  local runing_servers=$(ls ${p11_kit_server_env_base}-*.env 2>/dev/null)
+  if [ -z "${runing_servers}" ]; then
+    logger "No running p11-kit servers found"
+    return
+  fi
+  for t in ${runing_servers}
+  do
+    . ${t}
+    logger "Stopping p11-kit server: P11_KIT_SERVER_PID=${P11_KIT_SERVER_PID}, ${P11_KIT_SERVER_ADDRESS}"
+    /usr/bin/p11-kit server -k
+    rm ${t}
+  done
+}
+
+## process the request
+case ${1} in
+  start)
+    start_p11_kit_servers
+    ;;
+  stop)
+    stop_p11_kit_servers
+    ;;
+  *)
+    logger "Unknown option ${1}"
+    ;;
+esac

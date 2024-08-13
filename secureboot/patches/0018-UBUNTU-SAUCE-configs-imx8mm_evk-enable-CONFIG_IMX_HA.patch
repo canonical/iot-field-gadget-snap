@@ -1,0 +1,26 @@
+From 182e6d4addb1a92dd4bbe60f8939141448d8779e Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Tue, 26 Sep 2023 10:47:21 +0100
+Subject: [PATCH 18/20] UBUNTU: SAUCE: configs: imx8mm_evk: enable
+ CONFIG_IMX_HAB=y
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ configs/imx8mm_evk_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configs/imx8mm_evk_defconfig b/configs/imx8mm_evk_defconfig
+index c3bbc83cd82..824215f63f3 100755
+--- a/configs/imx8mm_evk_defconfig
++++ b/configs/imx8mm_evk_defconfig
+@@ -237,6 +237,7 @@ CONFIG_BZIP2=y
+ CONFIG_ZLIB=y
+ CONFIG_ZSTD=y
+ # CONFIG_EFI_LOADER is not set
++CONFIG_IMX_HAB=y
+ CONFIG_OPTEE=y
+ CONFIG_CMD_OPTEE_RPMB=y
+ CONFIG_TEE=y
+-- 
+2.40.1
+

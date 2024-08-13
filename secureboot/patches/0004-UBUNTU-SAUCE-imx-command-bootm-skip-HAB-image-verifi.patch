@@ -1,0 +1,30 @@
+From 623d266e9c869fad8d1d64854eb9094f158041dd Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Mon, 23 May 2022 18:35:06 +0100
+Subject: [PATCH 04/20] UBUNTU: SAUCE: imx: command: bootm: skip HAB image
+ verification for FIT image
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ cmd/bootm.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/cmd/bootm.c b/cmd/bootm.c
+index 796d5e23adb..a5a1498eeae 100644
+--- a/cmd/bootm.c
++++ b/cmd/bootm.c
+@@ -207,6 +207,11 @@ int do_bootm(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
+ 	case IMAGE_FORMAT_ANDROID:
+ 		/* Do this authentication in boota command */
+ 		break;
++#endif
++#if defined(CONFIG_FIT)
++	case IMAGE_FORMAT_FIT:
++		/* Skip the verification of HAB for FIT image*/
++		break;
+ #endif
+ 	default:
+ 		printf("Not valid image format for Authentication, Please check\n");
+-- 
+2.40.1
+

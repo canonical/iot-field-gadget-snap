@@ -1,0 +1,26 @@
+From 33a2ec3e0a64b5f34e70f7c9dfb0474d8fa17150 Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Thu, 30 Mar 2023 18:10:42 +0100
+Subject: [PATCH 17/20] UBUNTU: SAUCE: configs: imx8mm_evk: disable
+ CONFIG_SHA_HW_ACCEL to fix secure boot with FIT image
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ configs/imx8mm_evk_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configs/imx8mm_evk_defconfig b/configs/imx8mm_evk_defconfig
+index 1bf8b28d9b6..c3bbc83cd82 100755
+--- a/configs/imx8mm_evk_defconfig
++++ b/configs/imx8mm_evk_defconfig
+@@ -225,6 +225,7 @@ CONFIG_RSA_SOFTWARE_EXP=y
+ CONFIG_SHA1=y
+ CONFIG_SHA256=y
+ CONFIG_SHA384=y
++# CONFIG_SHA_HW_ACCEL is not set
+ CONFIG_MD5=y
+ CONFIG_XXHASH=y
+ CONFIG_LZ4=y
+-- 
+2.40.1
+

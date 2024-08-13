@@ -1,0 +1,52 @@
+From 8676e0d88cf2045b9faf6e0a1f20717e9820eac6 Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Tue, 20 Apr 2021 12:43:53 +0100
+Subject: [PATCH 12/20] UBUNTU: SAUCE: configs: imx8mm_evk: enable FIT boot
+ support
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ configs/imx8mm_evk_defconfig | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/configs/imx8mm_evk_defconfig b/configs/imx8mm_evk_defconfig
+index bb641e33ddc..012280a7f41 100755
+--- a/configs/imx8mm_evk_defconfig
++++ b/configs/imx8mm_evk_defconfig
+@@ -30,6 +30,11 @@ CONFIG_BOOTCOMMAND="run boot_uc"
+ CONFIG_SYS_MONITOR_LEN=524288
+ CONFIG_FIT=y
+ CONFIG_FIT_EXTERNAL_OFFSET=0x3000
++CONFIG_FIT_SIGNATURE=y
++CONFIG_FIT_ENABLE_SHA256_SUPPORT=y
++CONFIG_FIT_SIGNATURE_MAX_SIZE=0x10000000
++CONFIG_MULTI_DTB_FIT=y
++CONFIG_MULTI_DTB_FIT_NO_COMPRESSION=y
+ CONFIG_SPL_LOAD_FIT=y
+ CONFIG_OF_SYSTEM_SETUP=y
+ CONFIG_BOARD_LATE_INIT=y
+@@ -214,8 +219,14 @@ CONFIG_EFI_RUNTIME_UPDATE_CAPSULE=y
+ CONFIG_EFI_CAPSULE_ON_DISK=y
+ CONFIG_EFI_CAPSULE_FIRMWARE_RAW=y
+ CONFIG_EFI_SECURE_BOOT=y
++CONFIG_RSA=y
+ CONFIG_SPL_RSA=y
++CONFIG_RSA_SOFTWARE_EXP=y
++CONFIG_SHA1=y
++CONFIG_SHA256=y
+ CONFIG_SHA384=y
++CONFIG_MD5=y
++CONFIG_XXHASH=y
+ CONFIG_LZ4=y
+ CONFIG_LZMA=y
+ CONFIG_LZO=y
+@@ -230,6 +241,5 @@ CONFIG_EFI_CAPSULE_AUTHENTICATE=y
+ CONFIG_OPTEE=y
+ CONFIG_CMD_OPTEE_RPMB=y
+ CONFIG_TEE=y
+-CONFIG_FIT_SIGNATURE=y
+ CONFIG_DM_RNG=y
+ CONFIG_KASLR=y
+-- 
+2.40.1
+

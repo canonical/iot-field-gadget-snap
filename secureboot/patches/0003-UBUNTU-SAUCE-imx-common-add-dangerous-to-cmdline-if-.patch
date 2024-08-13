@@ -1,0 +1,80 @@
+From 88ba272f999c273305c1f3fa255727b42deae0ef Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Fri, 25 Mar 2022 14:54:38 +0000
+Subject: [PATCH 03/20] UBUNTU: SAUCE: imx: common: add dangerous to cmdline if
+ SB is not enabled
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ boot/bootm.c | 41 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+
+diff --git a/boot/bootm.c b/boot/bootm.c
+index 2eec60ec7b5..dfffea68646 100644
+--- a/boot/bootm.c
++++ b/boot/bootm.c
+@@ -33,6 +33,10 @@
+ #include <bootm.h>
+ #include <image.h>
+ 
++#ifdef CONFIG_IMX_HAB
++#include <asm/mach-imx/hab.h>
++#endif
++
+ #define MAX_CMDLINE_SIZE	SZ_4K
+ 
+ #define IH_INITRD_ARCH IH_ARCH_DEFAULT
+@@ -659,6 +663,40 @@ int bootm_process_cmdline_env(int flags)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_IMX_HAB
++
++#define DANGEROUS_ARG     "dangerous"
++#define PANIC_ARG         "panic=-1"
++#define EXTRA_ARG_LEN (sizeof(DANGEROUS_ARG) - 1)
++
++/**
++ * @brief Update cmdline with "dangerous" on devices
++ * with disabled secure boot otherwise add "panic=-1"
++ *
++ * Check state of the fuses on i.MX devices
++ * if device has not enabled secure boot, add "dangerous" to the cmdline
++ * this eases development on devices which are not locked down
++ */
++static void fixup_secure_linux(void)
++{
++	char *buf;
++	char *cmdline = env_get("bootargs");
++	/* Allocate space for maximum possible new command line */
++	buf = malloc(strlen(cmdline) + 1 + EXTRA_ARG_LEN + 1);
++	if (!buf) {
++		debug("%s: out of memory\n", __func__);
++		return;
++	}
++	if (!imx_hab_is_enabled()) {
++		sprintf(buf, "%s %s", cmdline, DANGEROUS_ARG);
++	} else {
++		sprintf(buf, "%s %s", cmdline, PANIC_ARG);
++	}
++	env_set("bootargs", buf);
++	free(buf);
++}
++#endif
++
+ /**
+  * Execute selected states of the bootm command.
+  *
+@@ -770,6 +808,9 @@ int do_bootm_states(struct cmd_tbl *cmdtp, int flag, int argc,
+ 			ret = CMD_RET_FAILURE;
+ 			goto err;
+ 		}
++#ifdef CONFIG_IMX_HAB
++		fixup_secure_linux();
++#endif
+ 		ret = boot_fn(BOOTM_STATE_OS_PREP, argc, argv, images);
+ 	}
+ 
+-- 
+2.40.1
+

@@ -1,0 +1,34 @@
+From b574ca5f772854fa97ee89c75df29110fc923f34 Mon Sep 17 00:00:00 2001
+From: Dilyn Corner <dilyn.corner@canonical.com>
+Date: Tue, 13 Aug 2024 19:09:37 -0400
+Subject: [PATCH 06/20] UBUNTU: SAUCE: arch: arm: dts: imx8mm-evk.dts add
+ signature block
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ arch/arm/dts/imx8mm-evk.dts | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm/dts/imx8mm-evk.dts b/arch/arm/dts/imx8mm-evk.dts
+index 73d2061efde..d836309b32a 100644
+--- a/arch/arm/dts/imx8mm-evk.dts
++++ b/arch/arm/dts/imx8mm-evk.dts
+@@ -16,6 +16,15 @@
+ 		bootargs = "console=ttymxc1,115200 earlycon=ec_imx6q,0x30890000,115200";
+ 	};
+ 
++	signature {
++		fit-key {
++			required ="conf";
++			algo ="sha256,rsa2048";
++			key-name-hint ="dev-key";
++#include "u-boot-pubkey.dtsi"
++		};
++	};
++
+ 	aliases {
+ 		spi0 = &flexspi;
+ 	};
+-- 
+2.40.1
+

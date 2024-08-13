@@ -1,0 +1,27 @@
+From b5c33c6766d224bde8a5464ac3968ac929a1c7c3 Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Tue, 26 Sep 2023 12:23:17 +0100
+Subject: [PATCH 19/20] UBUNTU: SAUCE: configs: imx8mm_evk: force imediate auto
+ reboot if anything fails
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ configs/imx8mm_evk_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/configs/imx8mm_evk_defconfig b/configs/imx8mm_evk_defconfig
+index 824215f63f3..d9c1e9e1198 100755
+--- a/configs/imx8mm_evk_defconfig
++++ b/configs/imx8mm_evk_defconfig
+@@ -28,6 +28,8 @@ CONFIG_SYS_LOAD_ADDR=0x40400000
+ CONFIG_LTO=y
+ CONFIG_DISTRO_DEFAULTS=y
+ CONFIG_BOOTCOMMAND="run boot_uc"
++CONFIG_BOOT_RETRY_TIME=60
++CONFIG_RESET_TO_RETRY=y
+ CONFIG_SYS_MONITOR_LEN=524288
+ CONFIG_FIT=y
+ CONFIG_FIT_EXTERNAL_OFFSET=0x3000
+-- 
+2.40.1
+

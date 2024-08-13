@@ -1,0 +1,27 @@
+From beea64b6bc64cd82fb9ea8801db5928c19bb8a95 Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Wed, 27 Apr 2022 13:58:16 +0100
+Subject: [PATCH 14/20] UBUNTU: SAUCE: configs: imx8mm_evk: add
+ CONFIG_*BOOTARGS definition
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ configs/imx8mm_evk_defconfig | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/configs/imx8mm_evk_defconfig b/configs/imx8mm_evk_defconfig
+index bff8ca4537a..b7094fc873e 100755
+--- a/configs/imx8mm_evk_defconfig
++++ b/configs/imx8mm_evk_defconfig
+@@ -102,6 +102,8 @@ CONFIG_OF_CONTROL=y
+ CONFIG_ENV_OVERWRITE=y
+ CONFIG_SUPPORT_RAW_INITRD=y
+ CONFIG_DEFAULT_FDT_FILE="imx8mm-evk.dtb"
++CONFIG_USE_BOOTARGS=y
++CONFIG_BOOTARGS="fde_helper=enabled"
+ CONFIG_ENV_IS_NOWHERE=y
+ # CONFIG_ENV_IS_IN_MMC is not set
+ CONFIG_SYS_RELOC_GD_ENV_ADDR=y
+-- 
+2.40.1
+

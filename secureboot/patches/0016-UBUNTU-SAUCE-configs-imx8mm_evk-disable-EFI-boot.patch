@@ -1,0 +1,50 @@
+From ca717938770d2d553764a2b37f7a958da38893ec Mon Sep 17 00:00:00 2001
+From: Ondrej Kubik <ondrej.kubik@canonical.com>
+Date: Mon, 23 May 2022 16:47:28 +0100
+Subject: [PATCH 16/20] UBUNTU: SAUCE: configs: imx8mm_evk: disable EFI boot
+
+Signed-off-by: Ondrej Kubik <ondrej.kubik@canonical.com>
+---
+ configs/imx8mm_evk_defconfig | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
+
+diff --git a/configs/imx8mm_evk_defconfig b/configs/imx8mm_evk_defconfig
+index 64e543663ca..1bf8b28d9b6 100755
+--- a/configs/imx8mm_evk_defconfig
++++ b/configs/imx8mm_evk_defconfig
+@@ -83,7 +83,6 @@ CONFIG_CMD_MII=y
+ CONFIG_CMD_PING=y
+ CONFIG_CMD_SNTP=y
+ CONFIG_CMD_CACHE=y
+-CONFIG_CMD_EFIDEBUG=y
+ CONFIG_CMD_RTC=y
+ CONFIG_CMD_TIME=y
+ CONFIG_CMD_GETTIME=y
+@@ -218,11 +217,8 @@ CONFIG_SPLASH_SCREEN_ALIGN=y
+ CONFIG_CMD_BMP=y
+ 
+ CONFIG_LEGACY_IMAGE_FORMAT=y
+-CONFIG_EFI_SET_TIME=y
+-CONFIG_EFI_RUNTIME_UPDATE_CAPSULE=y
+-CONFIG_EFI_CAPSULE_ON_DISK=y
+-CONFIG_EFI_CAPSULE_FIRMWARE_RAW=y
+-CONFIG_EFI_SECURE_BOOT=y
++# CONFIG_BOOTM_EFI is not set
++# CONFIG_CMD_BOOTEFI is not set
+ CONFIG_RSA=y
+ CONFIG_SPL_RSA=y
+ CONFIG_RSA_SOFTWARE_EXP=y
+@@ -239,9 +235,7 @@ CONFIG_ZLIB_UNCOMPRESS=y
+ CONFIG_BZIP2=y
+ CONFIG_ZLIB=y
+ CONFIG_ZSTD=y
+-CONFIG_EFI_VAR_BUF_SIZE=139264
+-CONFIG_EFI_IGNORE_OSINDICATIONS=y
+-CONFIG_EFI_CAPSULE_AUTHENTICATE=y
++# CONFIG_EFI_LOADER is not set
+ CONFIG_OPTEE=y
+ CONFIG_CMD_OPTEE_RPMB=y
+ CONFIG_TEE=y
+-- 
+2.40.1
+
