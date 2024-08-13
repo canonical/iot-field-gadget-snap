@@ -38,10 +38,10 @@ else
     setenv prefix "systems/${snapd_recovery_system}/kernel/"
         setenv kernel_bootpart "${seedpart}"
 fi
-setenv console  "console=ttyS0,115200 earlycon"
+setenv console  "console=ttyS0,115200n8 earlycon"
 setenv bootargs "${bootargs} ${console} rw snapd_recovery_mode=${snapd_recovery_mode} snapd_recovery_system=${snapd_recovery_system}"
 
 echo "Loading ${prefix}${kernel_name}..."
 
-load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} "${prefix}${kernel_name}"
+load ${devtype} ${devnum}:${kernel_bootpart} ${kernel_addr_r} ${prefix}${kernel_name}
 bootm ${kernel_addr_r}
