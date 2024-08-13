@@ -9,12 +9,27 @@ volumes:
         size: 65536
         content:
           - image: boot0_sdcard_sun20iw1p1.bin
+        update:
+          edition: 1
+        # The boot0 SPL used by the Nezha board expects to load a TOC1 image
+        # containing OpenSBI, U-Boot, and a DTB from sector 32800. If loading
+        # fails, it tries to read a backup from sector 24576.
+      - name: toc1-backup
+        type: bare
+        offset: 12582912
+        size: 1048576
+        content:
+          - image: u-boot.toc1
+        update:
+          edition: 1
       - name: toc1
         type: bare
         offset: 16793600
         size: 1048576
         content:
           - image: u-boot.toc1
+        update:
+          edition: 1
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
@@ -24,6 +39,8 @@ volumes:
         content:
           - source: boot.scr
             target: /
+        update:
+          edition: 1
       - name: ubuntu-boot
         role: system-boot
         filesystem: ext4
@@ -32,6 +49,8 @@ volumes:
         content:
           - source: boot.sel
             target: uboot/ubuntu/boot.sel
+        update:
+          edition: 1
       - name: ubuntu-save
         role: system-save
         filesystem: ext4
