@@ -25,6 +25,7 @@ confinement: strict
 license: "Beerware AND BSD-2-Clause AND BSD-3-Clause AND CC-BY-SA-3.0 AND CC-BY-SA-4.0 AND GPL-2.0-or-later AND GPL-3.0-or-later AND LGPL-2.1 AND MIT"
 website: https://github.com/canonical/iot-field-gadget-snap
 issues: https://github.com/canonical/iot-field-gadget-snap/issues
+source-code: https://github.com/canonical/iot-field-gadget-snap/tree/24-riscv64-visionfive2
 
 assumes: [kernel-assets]
 
