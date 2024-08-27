@@ -2,7 +2,6 @@ name: visionfive2
 adopt-info: grub
 type: gadget
 base: core24
-build-base: devel
 summary: An Ubuntu Core gadget for the StarFive VisionFive 2
 description: |
   This snap provides the u-boot and GRUB binaries for booting the RISC-V
@@ -29,8 +28,9 @@ issues: https://github.com/canonical/iot-field-gadget-snap/issues
 
 assumes: [kernel-assets]
 
-architectures:
-  - build-on:  [amd64, riscv64]
+platforms:
+  riscv64:
+    build-on:  [amd64, riscv64]
     build-for: [riscv64]
 
 # Provides GRUB and u-boot for target hardware
@@ -59,7 +59,7 @@ parts:
     plugin: dump
     source: grub/
     stage-packages:
-      - grub-efi-riscv64:${CRAFT_ARCH_BUILD_FOR}
+      - grub-efi-${CRAFT_ARCH_BUILD_FOR}:${CRAFT_ARCH_BUILD_FOR}
     override-build: |
       craftctl default
 
@@ -75,11 +75,11 @@ parts:
       # Ubuntu does not ship either a grub binary nor a signed binary+shim on
       # this architecture As a result, we have to build the binary ourselves.
       # Here are at least the more useful grub modules required for Ubuntu Core:
-      GRUB_MODULES="all_video boot cat chain configfile echo ext2 fat font \
-                    gettext gfxmenu gfxterm gfxterm_background gzio halt \
-                    jpeg keystatus loadenv loopback linux memdisk minicmd \
+      GRUB_MODULES="all_video boot cat chain configfile echo ext2 fat font  \
+                    gettext gfxmenu gfxterm gfxterm_background gzio halt    \
+                    jpeg keystatus loadenv loopback linux memdisk minicmd   \
                     normal part_gpt png reboot regexp search search_fs_uuid \
-                    search_fs_file search_label sleep squash4 test true video lsmmap"
+                    search_fs_file search_label sleep squash4 test true video"
 
       # grub.builtin is a GRUB cfg file that we embed in GRUB to automate
       # the booting process. It will search for a grub.cfg in the ubuntu-boot
@@ -87,11 +87,11 @@ parts:
       # partition. Both of these assets are controlled by snapd because we
       # select GRUB as our bootloader.
 
-      "${CRAFT_PART_INSTALL}/usr/bin/grub-mkimage" -v -p efi -O  riscv64-efi                           \
-                                                   -c "${CRAFT_PART_INSTALL}/grub.builtin"             \
-                                                   -o "${CRAFT_PART_INSTALL}/grubriscv64.efi"          \
-                                                   -d "${CRAFT_PART_INSTALL}/usr/lib/grub/riscv64-efi" \
-                                                   ${GRUB_MODULES}
+      "${CRAFT_PART_INSTALL}/usr/bin/grub-mkimage" -v -p efi                   \
+        -O ${CRAFT_ARCH_BUILD_FOR}-efi -c "${CRAFT_PART_INSTALL}/grub.builtin" \
+        -o "${CRAFT_PART_INSTALL}/grub${CRAFT_ARCH_BUILD_FOR}.efi"             \
+        -d "${CRAFT_PART_INSTALL}/usr/lib/grub/${CRAFT_ARCH_BUILD_FOR}-efi"    \
+        ${GRUB_MODULES}
 
       # uEnv.txt is a file that our u-boot binary will search for and source on
       # boot. This file should launch our grubriscv64.efi binary and results in
