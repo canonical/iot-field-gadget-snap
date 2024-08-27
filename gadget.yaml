@@ -29,7 +29,7 @@ volumes:
           - source: uEnv.txt
             target: uEnv.txt
           - source: $kernel:dtbs/dtbs/
-            target: /dtbs
+            target: /dtbs/
       - name: ubuntu-boot
         role: system-boot
         filesystem: ext4
@@ -38,10 +38,6 @@ volumes:
         content:
           - source: grubriscv64.efi
             target: EFI/boot/grubriscv64.efi
-          - source: uEnv.txt
-            target: uEnv.txt
-          - source: $kernel:dtbs/dtbs/
-            target: /dtbs
       - name: ubuntu-save
         role: system-save
         filesystem: ext4
