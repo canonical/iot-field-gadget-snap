@@ -10,6 +10,8 @@ volumes:
         size: 2M
         content:
           - image: u-boot-spl.bin.normal.out
+        update:
+          edition: 1
         # u-boot belongs in /dev/mmcblk0p2, /dev/mtd1
       - name: uboot
         type: 5B193300-FC78-40CD-8002-E86C45580B47
@@ -17,6 +19,8 @@ volumes:
         size: 4M
         content:
           - image: visionfive2_fw_payload.img
+        update:
+          edition: 1
       - name: ubuntu-seed
         role: system-seed
         filesystem: vfat
@@ -30,6 +34,8 @@ volumes:
             target: uEnv.txt
           - source: $kernel:dtbs/dtbs/
             target: /dtbs/
+        update:
+          edition: 1
       - name: ubuntu-boot
         role: system-boot
         filesystem: ext4
@@ -38,6 +44,8 @@ volumes:
         content:
           - source: grubriscv64.efi
             target: EFI/boot/grubriscv64.efi
+        update:
+          edition: 1
       - name: ubuntu-save
         role: system-save
         filesystem: ext4
