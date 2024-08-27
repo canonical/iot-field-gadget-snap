@@ -4,8 +4,5 @@ set timeout=3
 insmod part_gpt
 insmod ext2
 
-search --no-floppy --label ubuntu-boot --set=root
-search --no-floppy --label ubuntu-seed --set=root
-
-set prefix=($root)
-configfile /EFI/ubuntu/grub.cfg
+set prefix=($root)/EFI/ubuntu/
+configfile $prefix/grub.cfg

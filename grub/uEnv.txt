@@ -1,5 +1,4 @@
-bootargs=console=ttyS0 earlycon
 bootcmd_load_grub=load ${devtype} ${devnum}:${distro_bootpart} ${kernel_addr_r} /EFI/boot/grubriscv64.efi
-bootcmd_load_dtb=load ${devtype} ${devnum}:${distro_bootpart} ${fdt_addr_r} /dtbs/starfive/jh7110-starfive-visionfive-2-v1.3b.dtb
+bootcmd_load_dtb=load ${devtype} ${devnum}:${distro_bootpart} ${fdt_addr_r} /dtbs/starfive/jh7110-starfive-visionfive-2-v1.2a.dtb
 bootcmd_run_grub=bootefi ${kernel_addr_r} ${fdt_addr_r}
 bootcmd=run bootcmd_load_grub; bootcmd_load_dtb; run bootcmd_run_grub
