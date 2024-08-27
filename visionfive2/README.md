@@ -1,130 +1,145 @@
 # The Gadget Snap
 
-The gadget snap defines the structure & boot mechanisms of our device, amongst
-many other things. As such, this snap is also quite device specific.
+This gadget snap provides the boot assets required to boot the StarFive
+Visionfive2.
 
-In this case, we are building u-boot to be carried as a payload for OpenSBI.
-From there, we hope to exec the system, whether it be to bootstrap Ubuntu Core
-or run as normal.
-
-Note that on Ubuntu systems, the `qemu-run` script provided by this repository
-utilizes the `u-boot` and `opensbi` files provided as deb packages, and so the
-artifacts built here go unused. On non-Ubuntu systems however, you will want to
-use `prime/fw_payload.bin` as the `bios` passed to Qemu.
-
-Much like the kernel, u-boot is very device specific. Modify
-`snap/snapcraft.yaml` as necessary for your device.
-
-Building:
-
-`snapcraft`
+Specifically, this gadget provides the u-boot and SPL binaries, along with a
+GRUB binary which search for the relevant partition expected of an Ubuntu Core
+system, depending on if this is a fresh system with only a system-seed partition
+or an already existing system with an ubuntu-boot partition.
 
 
-## Academic Information
+## Usage
 
-There are several different ways of building OpenSBI, the Supervisor Binary
-Interface for RISC-V (for more information, see [their project](https://github.com/riscv-software-src/opensbi)).
-
-1) `fw_jump.elf`
-
-    Jumps to a specific location in memory and executes the object there
-
-2) `fw_payload.elf`
-
-    Executes a binary built into OpenSBI as a payload
-
-3) `fw_dynamic.elf`
-
-    Determines how to proceed to the next bootloader at run-time
-
-`fw_dynamic.elf` is used in cases where `u-boot.bin` is built in m-mode
-(`qemu-riscv64_spl_defconfig`). This is not our case here, so we will ignore it.
-
-`fw_jump.elf` is useful in cases where we want to execute some arbitrary program
-at a memory address; for all practical purposes, the thing we load is either
-Linux or u-boot. So we don't need this.
-
-`fw_payload.elf` is used when you know you want to execute the same payload
-every time. This is specifically useful when the boot stage prior to OpenSBI
-cannot execute *both* OpenSBI *and* the following boot stage. This is
-interesting to us (at least in the Qemu case).
+Because this gadget uses GRUB to boot the kernel, it should behave very
+similarly to the reference gadget snaps maintained by Canonical. However,
+successfully building this image requires using a forked version of [snapd](https://github.com/dilyn-corner/snapd/tree/grub-riscv) 
+and [ubuntu-image](https://github.com/dilyn-corner/ubuntu-image/tree/grub-riscv), 
+respectively. This is because some of the GRUB assets provided by snapd need to
+be updated to support RISC-V systems, and ubuntu-image uses some snapd code to
+generate these assets at image build time. A PR to add these changes to upstream
+can be tracked [here](https://github.com/snapcore/snapd/pull/14201).
 
 
-Therefore, we know that we must
-1) build u-boot in smode (`qemu-riscv64_smode_defconfig`)
-2) build OpenSBI with that `u-boot.bin` as `FW_PAYLOAD_PATH=/path/to/u-boot.bin`
+## Building
 
-Thus, this gadget has two primary binaries which are built:
-1) u-boot.bin
-2) fw_payload.elf
+1) Build and install the ubuntu-image fork from above (`snapcraft`)
+2) Build the snapd snap fork from above (`snapcraft --remote-build --build-for riscv64`)
+3) build this snap (and the corresponding [kernel snap](https://github.com/canonical/iot-field-kernel-snap/tree/24-riscv64-visionfive2))
+4) Create a model assertion (get inspiration from the [reference models](https://github.com/snapcore/models))
+5) Build your image:
 
-This is approximately all the knowledge required for us here.
+```sh
+    ubuntu-image snap              \
+        --snap path/to/snapd/snap  \
+        --snap path/to/gadget/snap \
+        --snap path/to/kernel/snap \
+        path/to/your/model
+```
 
-There are some additional files to consider.
+6) One can optionally add [console-conf](https://github.com/snapcore/console-conf-snap) 
+to the image, but having RISC-V versions of this snap available in the store is
+[blocked](https://github.com/snapcore/console-conf-snap/pull/29) on snapd 2.64
+being released for RISC-V to resolve an outstanding bug in snapd.
 
-`boot.scr.in` file is processed at build-time to produce a set of
-instructions which `u-boot.bin` will execute at run-time.
+Alternatively, a system-user assertion can be added to the image:
 
-`gadget.yaml` defines the underlying structure of our Ubuntu Core image.
-
-`fitImage.its` is an optional file in our use case but can be relevant when we
-are using a u-boot built in M-mode (spl). This case will require a modified
-`snap/snapcraft.yaml` in which we build u-boot twice, once as a payload for
-OpenSBI and a second time as a binary containing that `fw_payload.elf`. This is
-potentially relevant on *real hardware*.
-
-
-## For Beginners
-
-If you are new to hardware enablement and board bring-up, welcome!
-
-Here are some good resources I found for RISC-V:
-
-[RISC-V bootflow, explained](https://crvf2019.github.io/pdf/43.pdf)
-
-[RISC-V bootflow (with examples!)](https://riscv.org/wp-content/uploads/2019/12/Summit_bootflow.pdf)
-
-[OpenSBI explainer](https://github.com/riscv-software-src/opensbi)
-
-[OpenSBI firmware explainer](https://github.com/riscv-software-src/opensbi/tree/master/docs/firmware)
-
-[Embedded Linux from Scratch](https://youtube.com/watch?v=cIkTh3Xp3dA)
-
-Some important things to know:
-
-1) There is high variation between boards. You will more than likely have to
-    tweak a few things to get your particular board working.
-
-2) Some boards simply aren't supported, whether by u-boot or the kernel
-    itself. The best way is to add support yourself. The easiest way is to
-    get someone else to do it for you.
-
-3) Given that you have to modify some files, what may they be?
-    * It's unlikely that you'll have to modify the `gadget.yaml` too much
-
-    * You'll have to use a different config than the one provided by
-      `u-boot/config`. Building u-boot is similar to building the kernel;
-      get the sources, do `make foo_defconfig` for your hardware,
-      `make menuconfig` to tweak.
-
-    * You'll have to tweak the addresses defined in `u-boot/boot.scr.in` -
-      these are very much specific to your board, as the amount of RAM
-      varies per device and what address `u-boot` reserves for itself can be
-      different. Useful tools in `u-boot` include `md`, `bdi`.
-
-Example: Qemu's virt board reserves all memory address prior to 0x80000000 (2G).
-Given a 2G machine, all available address are 0x80000000 to 0xffffffff. However,
-some of this memory is occupied; Qemu injects its device tree into OpenSBI on
-your behalf, and so a small portion of addressable space is already occupied by
-that. Just poke an address to see what's available. Your board's manual might
-also include some helpful information.
-
-4) Slight modifications will be needed for `snap/snapcraft.yaml`,
-    particularly to modify the `make foo_defconfig` invocation.
-
-Ultimately, it's a game of tweak-rebuild-reflash. Eventually, you'll get to the
-kernel. And from there, it's a whole new ball game.
+```json
+    {
+        "type": "system-user",
+        "authority-id": "<same ID which signed the model assertion>",
+        "series": ["16"],
+        "brand-id": "<same ID which signed the model assertion>",
+        "email": "<your email address>",
+        "models": ["<same as model name in model assertion"],
+        "name": "<your name>",
+        "username": "<your desired username>",
+        "password": "<mkpasswd -m sha-512 -S <8CHARSALT> -s>",
+        "since": "2023-01-16T18:06:04+00:00",
+        "until": "2025-05-16T18:06:04+00:00"
+    }
+```
 
 
-If you have any questions, don't hesitate to ask (email)! If you identify an
-issue, make an issue. If you have something to add, open a PR!
+Sign with the same key which signed the model assertion:
+
+```sh
+    snap sign -k <model signing key> --chain auto-import.json > auto-import.assert
+```
+
+Put `auto-import.assert` in the `systems/<date>/` directory of the image you
+create.
+
+
+7) Write that image to an SD card (note that sdX is your SD card, this command
+    is destructive to data):
+
+```
+    dd if=visionfive2.img of=/dev/sdX bs=1M status=progress conv=fsync
+```
+
+8) Insert the SD card and boot the board
+
+Some current issues prevent fully automated installation; see the next section
+for those issues and current workarounds.
+
+
+## Current issues
+
+- No output is visible when allowing GRUB config to manage the boot process
+
+For some reason unknown to the author, the `snapd_full_cmdline_args` value in
+`systems/<date>/grubenv` is improperly generated; it uses the amd64 snippet
+instead of the riscv64 snippet it *should* be using. A workaround exists:
+
+```sh
+    sudo partx -av visionfive2.img
+    sudo mount /dev/loopXXp1 /mnt
+    # Modify the snapd_full_cmdline_args line to read 'console=ttyS0,115200n8
+    #   earlycon panic=-1' and delete some # marks
+    sudo umount /mnt
+    sudo partx -d /dev/loopXX
+```
+
+This will result in full boot output on the serial device output of the device.
+
+- One ethernet port works
+
+Specifically, the *innermost* one. The Wiki claims only the outermost one works,
+but that doesn't seem to be true :)
+
+- USB does not work
+
+This one is weird. No idea why :)
+
+- GPU does not work
+
+Again, weird. No idea why :)
+
+- The DTB in-use isn't easy to specify
+
+A DTB for both versions (1.2a, 1.3b) are available in `mmc 1:3 dtbs/starfive`.
+GRUB might do the right thing, who knows! To specify:
+
+```sh
+    load mmc 1:3 $kernel_addr_r /EFI/boot/grubriscv64.efi
+    load mmc 1:3 $fdt_addr_r    /dtbs/starfive/jh7110-starfive-visionfive-2-v1.2a.dtb
+    bootefi $kernel_addr_r $fdt_addr_r
+```
+
+- The OS can't update any EFI entries
+
+This is a u-boot limitation as far as I can tell; it really just means we should
+be building u-boot ourselves :)
+
+You can do the below, however. Note that my board booted with the correct DTB
+after doing the following:
+
+```sh
+    efidebug boot add -b 0001 'Ubuntu Core 24' mmc 1:3 /EFI/boot/grubriscv64.efi
+    efidebug boot order 0001
+    bootefi bootmgr
+```
+
+The board should automagically boot from now on! Swap mmc for nvme if you are
+using that, of course.
