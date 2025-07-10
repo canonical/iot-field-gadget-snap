@@ -19,40 +19,42 @@ inspiration, for use on dangerous-grade model Ubuntu Core images.
 
 ## Repository structure
 
-Each gadget snap is confined to its own branch. The naming convention is:
+The branches correspond to a Core release and any platforms which hhave had a
+gadget snap made for them can be found in that branch under their respective
+subdirectory.
 
-\<Core release\>-\<architecture\>-\<platform\>
+* The `main` branch is for hosting workflows, a project description (this
+README), and an example skeleton of a gadget snap.
+* If you wish to add a new gadget to this repository, create a subdirectory for
+the platform on the relevant branch.
+* If the gadget snap is one for Classic systems, please add a `-classic` suffix
+to the directory name.
+* If you wish to update a kernel snap from one base to another, please switch
+to the branch corresponding to the targetted release and checkout the platform's
+subdirectory from the most recent branch. For example:
 
-* The `main` branch is for hosting workflows, a project description (this README),
-and an example skeleton of a gadget snap.
-* If you wish to add a new gadget to this repository, choose either a board with
-similar architecture or create a branch using `--orphan`.
-* If you wish to update a gadget snap from one base to another, please create a
-new branch with the same name changing the `<Core release>` prefix.
-* If the gadget snap is one for Classic systems, please add a `-classic` suffix to
-the branch name.
+```sh
+  git checkout 24
+  git checkout 22 -- nezha
+  # proceed
+```
 
 
-## Branches
+## Subdirectories
 
-Please ensure that your branch includes the following:
-
-1) a README describing 
-   - the board, 
-   - how the gadget snap functions (in broad, general terms; no need to be too technical), 
-   - including references to documentation if you prefer,
-2) license information in the snapcraft.yaml
-   - Any general text file should be CC-BY-SA
-   - Any code should be GPLv3
+Please ensure that your subdirectory includes a README describing:
+  - the board,
+  - how the gadget functions (in broad, general terms; no need to be too technical),
+  - including references to documentation if you prefer
 
 
 ## Workflows
 
-The expectation is that any new branch should have an accompanying new workflow
-added. That workflow should follow the general style of the other workflows, and
-ideally there are two:
+The expectation is that any new subdirectory should have an accompanying new
+workflow added. That workflow should follow the general style of the other
+workflows, and ideally there are two:
 
-1) One workflow testing builds using some version-specific snapcraft (i.e. `{7,8}.x/edge`)
+1) One workflow testing builds using some version-specific snapcraft (e.g. `7.x/edge`)
 2) One workflow testing builds using snapcraft from `latest/edge`
 
 This ensures continuous testing of our work to spot any potential regressions or breaking changes.
