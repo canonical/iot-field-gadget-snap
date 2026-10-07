@@ -18,6 +18,6 @@ if [ -z "$MODEL_APIKEY" ] ; then
 fi
 
 # Note: serial value should be unique within a model
-snapctl set registration.proposed-serial="\"$$(cat /proc/sys/kernel/random/uuid)\""
+snapctl set registration.proposed-serial="\"$(cat /proc/sys/kernel/random/uuid)\""
 snapctl set device-service.url="https://serial-vault-partners.canonical.com/v1/"
 snapctl set device-service.headers="{\"api-key\": \"$MODEL_APIKEY\"}"
